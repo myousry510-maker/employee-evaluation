@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منظومة تقييم الموظف المثالي | جملة ماركت</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF6B00; 
+            --primary-dark: #D45500;
+            --dark: #1C1C1C;
+            --mid: #4A4A4A;
+            --bg-light: #FFF4EC;
+            --white: #FFFFFF;
+            --success: #27AE60;
+            --warning: #F39C12;
+            --info: #2980B9;
+            --danger: #E74C3C;
+            --border: rgba(255, 107, 0, 0.25);
+            --body-bg: #fcfcfc;
+            --card-shadow: rgba(255, 107, 0, 0.08);
+            --text-main: #1C1C1C;
+            --input-bg: #FFFFFF;
+            --input-border: #ccc;
+            --table-hover: rgba(255, 107, 0, 0.03);
+            --table-border: #eee;
+        }
+
+        [data-theme="dark"] {
+            --primary: #FF7B1A;
+            --primary-dark: #E65C00;
+            --dark: #FFFFFF;
+            --mid: #CDCDCD;
+            --bg-light: #2C2520;
+            --white: #1E1E1E;
+            --border: rgba(255, 123, 26, 0.4);
+            --body-bg: #121212;
+            --card-shadow: rgba(0, 0, 0, 0.5);
+            --text-main: #E0E0E0;
+            --input-bg: #2A2A2A;
+            --input-border: #444;
+            --table-hover: rgba(255, 123, 26, 0.08);
+            --table-border: #333;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        body { background-color: var(--body-bg); color: var(--text-main); padding: 20px; }
+        .container { max-width: 1650px; margin: 0 auto; background: var(--white); padding: 30px; border-radius: 16px; box-shadow: 0 8px 32px var(--card-shadow); border-top: 8px solid var(--primary); }
+        .control-bar { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .action-btn { padding: 10px 18px; border: 1px solid var(--input-border); border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; background: var(--input-bg); color: var(--text-main); }
+        .action-btn:hover { border-color: var(--primary); background: var(--bg-light); }
+        .action-btn.btn-refresh { background: #2980B9; color: white; border-color: #2980B9; }
+        .action-btn.btn-pdf { background: #8E44AD; color: white; border-color: #8E44AD; }
+        .action-btn.btn-danger { background: var(--danger); color: white; border-color: var(--danger); }
+        
+        .action-btn.btn-dark-danger { background: #8B0000; color: white; border-color: #8B0000; }
+        .action-btn.btn-dark-danger:hover { background: #550000; border-color: #550000; }
+        
+        .header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px dashed var(--border); }
+        .header h1 { color: var(--primary); font-size: 28px; font-weight: 900; }
+        
+        .month-selector-bar { background: var(--bg-light); border: 1px dashed var(--primary); padding: 15px 20px; border-radius: 10px; margin-bottom: 25px; display: flex; align-items: center; gap: 15px; }
+        .month-selector-bar label { font-weight: 900; font-size: 16px; color: var(--primary); }
+        .month-select { padding: 8px 16px; font-size: 15px; font-weight: 700; border-radius: 6px; border: 1px solid var(--primary); background: var(--white); color: var(--text-main); outline: none; }
+        
+        .tabs { display: flex; gap: 12px; margin-bottom: 25px; border-bottom: 2px solid var(--table-border); padding-bottom: 10px; }
+        .tab-btn { padding: 12px 24px; border: none; background: #e0e0e0; color: var(--mid); font-weight: 700; font-size: 15px; border-radius: 8px; cursor: pointer; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        [data-theme="dark"] .tab-btn { background: #333; }
+        
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        .evaluation-box { background: var(--bg-light); border: 1px solid var(--border); padding: 25px; border-radius: 12px; margin-bottom: 35px; }
+        .box-title { font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 15px; border-right: 4px solid var(--primary); padding-right: 10px; }
+        .grid-inputs { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin-bottom: 25px; }
+        .form-group { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 8px; }
+        .form-group.score-group { flex: 0 0 160px; min-width: 160px; }
+        .form-group label { font-weight: 700; color: var(--mid); font-size: 14px; }
+        .form-group select, .form-group input { padding: 12px; border: 1px solid var(--input-border); border-radius: 8px; font-size: 14px; font-weight: 600; background: var(--input-bg); color: var(--text-main); outline: none; }
+        
+        .criteria-list { background: var(--white); border-radius: 8px; padding: 15px; border: 1px solid var(--table-border); margin-bottom: 20px; }
+        .axis-title { background: #1C1C1C; color: white; padding: 8px 12px; font-weight: 700; font-size: 14px; margin-top: 15px; margin-bottom: 10px; border-radius: 4px; }
+        [data-theme="dark"] .axis-title { background: #333; }
+        .criterion-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--table-border); font-size: 14px; }
+        .criterion-row input { width: 80px; padding: 6px; text-align: center; font-weight: bold; border: 1px solid var(--input-border); border-radius: 4px; background: var(--input-bg); color: var(--text-main); }
+        
+        .btn-save { background: var(--primary); color: white; border: none; padding: 14px 30px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
+        .btn-save:hover { background: var(--primary-dark); }
+        
+        .table-title { font-size: 20px; font-weight: 700; color: var(--text-main); margin-bottom: 15px; border-right: 5px solid var(--primary); padding-right: 10px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: center; font-size: 13px; }
+        th { background: #1C1C1C; color: white; padding: 12px 6px; font-size: 12px; font-weight: 700; vertical-align: middle; border: 1px solid var(--table-border); line-height: 1.4; }
+        [data-theme="dark"] th { background: #252525; }
+        th .th-sub { display: block; font-size: 10px; color: #FF6B00; margin-top: 2px; font-weight: bold; }
+        td { padding: 12px 6px; border: 1px solid var(--table-border); font-size: 13px; color: var(--text-main); font-weight: 600; }
+        tr:hover { background-color: var(--table-hover); }
+        .rank-badge { display: inline-block; width: 26px; height: 26px; line-height: 26px; border-radius: 50%; background: var(--table-border); font-weight: 700; font-size: 12px; }
+        tr:nth-child(1) .rank-badge { background: #FFD700; color: #000; }
+        tr:nth-child(2) .rank-badge { background: #C0C0C0; color: #000; }
+        tr:nth-child(3) .rank-badge { background: #CD7F32; color: white; }
+        .emp-name { text-align: right; font-weight: 700; min-width: 140px; }
+        .final-avg { font-size: 15px; font-weight: 900; color: var(--primary); background: rgba(255, 107, 0, 0.05); }
+        .status-badge { padding: 4px 10px; border-radius: 50px; font-size: 11px; font-weight: 700; display: inline-block; white-space: nowrap; }
+        .status-pending { background: #FFF3CD; color: #856404; }
+        .status-complete { background: #D4EDDA; color: #155724; }
+        
+        .history-layout { display: flex; gap: 20px; }
+        .employees-sidebar { flex: 0 0 320px; background: var(--bg-light); border: 1px solid var(--border); border-radius: 12px; padding: 15px; max-height: 700px; overflow-y: auto; }
+        .sidebar-item { padding: 12px; background: var(--white); border: 1px solid var(--table-border); margin-bottom: 8px; border-radius: 8px; cursor: pointer; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-item:hover, .sidebar-item.selected { border-color: var(--primary); background: var(--primary); color: white; }
+        .details-panel { flex: 1; background: var(--white); border: 1px solid var(--table-border); border-radius: 12px; padding: 25px; min-height: 400px; }
+        .empty-state { text-align: center; color: var(--mid); margin-top: 100px; font-weight: 600; font-size: 16px; }
+        
+        .history-criteria-block { background: var(--bg-light); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .history-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed rgba(0,0,0,0.1); font-size: 14px; }
+        
+        @media print {
+            .control-bar, .tabs, .month-selector-bar, .btn-save, .action-btn { display: none !important; }
+            body.print-active-tab-only .page { display: none !important; }
+            body.print-active-tab-only .page.active { display: block !important; }
+            body.print-active-tab-only .employees-sidebar { display: none !important; }
+            body.print-active-tab-only .details-panel { width: 100% !important; border: none !important; padding: 0 !important; }
+            body:not(.print-active-tab-only) #page-evaluate, 
+            body:not(.print-active-tab-only) #page-history { display: none !important; }
+            body:not(.print-active-tab-only) #page-leaderboard { display: block !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="control-bar">
+        <button class="action-btn btn-refresh" onclick="syncDataLive()">🔄 تحديث ومزامنة فورية لكل الأجهزة</button>
+        <button class="action-btn" onclick="toggleTheme()">🌓 وضع ليلي / نهاري</button>
+        <button class="action-btn btn-pdf" onclick="printCurrentActivePage()">💾 حفظ التقرير PDF</button>
+        <button class="action-btn btn-danger" onclick="openResetMenu()">🗑️ مسح وإخلاء واجهة التقرير الحالية</button>
+        <button class="action-btn btn-dark-danger" onclick="wipeAllDataAndCloudStore()">🚨 فرمتة ومسح الأرشيف والجوجل شيت نهائياً</button>
+    </div>
+
+    <div class="header">
+        <h1>لوحة اختيار الموظف المثالي</h1>
+    </div>
+
+    <div class="month-selector-bar">
+        <label for="globalMonthSelect">📅 تحديد شهر التقييم المستهدف:</label>
+        <select id="globalMonthSelect" class="month-select" onchange="handleMonthChange()">
+            <option value="يناير 2026">يناير 2026</option>
+            <option value="فبراير 2026">فبراير 2026</option>
+            <option value="مارس 2026">مارس 2026</option>
+            <option value="أبريل 2026">أبريل 2026</option>
+            <option value="مايو 2026" selected>مايو 2026</option>
+            <option value="يونيو 2026">يونيو 2026</option>
+            <option value="يوليو 2026">يوليو 2026</option>
+            <option value="أغسطس 2026">أغسطس 2026</option>
+            <option value="سبتمبر 2026">سبتمبر 2026</option>
+            <option value="أكتوبر 2026">أكتوبر 2026</option>
+            <option value="نوفمبر 2026">نوفمبر 2026</option>
+            <option value="ديسمبر 2026">ديسمبر 2026</option>
+        </select>
+    </div>
+
+    <div class="tabs">
+        <button id="tab-btn-evaluate" class="tab-btn active" onclick="switchTab('evaluate')">✍️ رصد تقييم جديد</button>
+        <button id="tab-btn-leaderboard" class="tab-btn" onclick="switchTab('leaderboard')">🏆 لوحة الصدارة والفائزين</button>
+        <button id="tab-btn-history" class="tab-btn" onclick="switchTab('history')">🔍 استرجاع وفحص التقييمات التفصيلية</button>
+    </div>
+
+    <div id="page-evaluate" class="page active">
+        <div class="evaluation-box">
+            <div class="box-title" id="evaluateBoxTitle">إدخال وبناء درجات المحاور لشهر (مايو 2026)</div>
+            <div class="grid-inputs">
+                <div class="form-group">
+                    <label for="employeeSelect">اسم الموظف المرشح للتقييم:</label>
+                    <select id="employeeSelect" onchange="loadSavedInputsIfExist();"></select>
+                </div>
+                <div class="form-group">
+                    <label for="evaluatorTypeSelect">جهة التصويت والتقييم الحالية (9 جهات):</label>
+                    <select id="evaluatorTypeSelect" onchange="loadSavedInputsIfExist();">
+                        <option value="manager">مدير الإدارة (محمد مصطفي)</option>
+                        <option value="deputy1" selected>النائب (محمد يسري)</option>
+                        <option value="deputy2">النائب (سعد محمد)</option>
+                        <option value="tl_first">رئيس الفريق الأول</option>
+                        <option value="tl_second">رئيس الفريق الثاني</option>
+                        <option value="tl_third">رئيس الفريق الثالث</option>
+                        <option value="tl_stock">تيم ليدر مجموعة المخزون</option>
+                        <option value="tl_finance">تيم ليدر المجموعة المالية</option>
+                        <option value="tl_special">تيم ليدر الإدارات المتخصصة</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="employeeFilterSelect">رئيس الفريق / التيم ليدر القائم بالتقييم:</label>
+                    <select id="employeeFilterSelect" onchange="loadSavedInputsIfExist();">
+                        <option value="">جميع الموظفين</option>
+                    </select>
+                </div>
+
+                <div class="form-group score-group">
+                    <label>مجموع الدرجات:</label>
+                    <input type="text" id="totalCalculatedScore" readonly value="0 / 100" style="color:var(--primary); text-align: center; font-weight: 900;">
+                </div>
+            </div>
+
+            <div class="box-title" style="font-size:16px;">المعايير التفصيلية المقرعة للاختيار (100 درجة):</div>
+            <div class="criteria-list" id="criteriaContainer"></div>
+            <button class="btn-save" onclick="saveEvaluationScore()">حفظ التقييم ومزامنته مع جميع الأجهزة فوراً</button>
+        </div>
+    </div>
+
+    <div id="page-leaderboard" class="page">
+        <div class="table-title" id="leaderboardTableTitle">🏆 ترتيب المتسابقين وتحديد الفائز</div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">الترتيب</th>
+                        <th style="width: 70px;">كود</th>
+                        <th>اسم الموظف المرشح</th>
+                        <th>مدير الإدارة<span class="th-sub">(محمد مصطفي)</span></th>
+                        <th>النائب<span class="th-sub">(محمد يسري)</span></th>
+                        <th>النائب<span class="th-sub">(سعد محمد)</span></th>
+                       <th id="head_tl_first">رئيس الفريق<span class="th-sub">الأول</span></th>
+                                     <th id="head_tl_second">رئيس الفريق<span class="th-sub">الثاني</span></th>
+                                     <th id="head_tl_third">رئيس الفريق<span class="th-sub">الثالث</span></th>
+                                     <th id="head_tl_stock">تيم ليدر<span class="th-sub">المخزون</span></th>
+                                     <th id="head_tl_finance">تيم ليدر<span class="th-sub">المالية</span></th>
+                                     <th id="head_tl_special">تيم ليدر<span class="th-sub">المتخصصة</span></th>
+                        <th style="width: 80px; background: rgba(255,107,0,0.1); color: var(--primary);">متوسط التقييم</th>
+                        <th style="width: 100px;">حالة التقييم</th>
+                    </tr>
+                </thead>
+                <tbody id="evaluationTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="page-history" class="page">
+        <div class="table-title" id="historyTableTitle">🔍 مستكشف وفاحص الدرجات التفصيلية</div>
+        <div class="history-layout">
+            <div class="employees-sidebar" id="historySidebar"></div>
+            <div class="details-panel" id="historyDetailsPanel">
+                <div class="empty-state">💡 اضغط على اسم الموظف من القائمة الجانبية لاستعراض وفحص درجاته التفصيلية.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const CLOUD_STORAGE_URL = "https://script.google.com/macros/s/AKfycbz4FxH_vdQotKg08neIk6Cj4-Hrc3jcBJPvCrAfgBHyarRUGet77L0-V7J6vnrTZaAZ/exec";
+const TARGET_SHEET_NAME = "لوحة اختيار الموظف المثالي";
+
+const evaluatorRoles = [
+    { key: 'manager', label: 'مدير الإدارة (محمد مصطفي)' },
+    { key: 'deputy1', label: 'النائب (محمد يسري)' },
+    { key: 'deputy2', label: 'النائب (سعد محمد)' },
+    { key: 'tl_first', label: 'رئيس الفريق الأول' },
+    { key: 'tl_second', label: 'رئيس الفريق الثاني' },
+    { key: 'tl_third', label: 'رئيس الفريق الثالث' },
+    { key: 'tl_stock', label: 'تيم ليدر مجموعة المخزون' },
+    { key: 'tl_finance', label: 'تيم ليدر المجموعة المالية' },
+    { key: 'tl_special', label: 'تيم ليدر الإدارات المتخصصة' }
+];
+
+const criteriaDefinition = [
+    {
+        axis: "1. المحور الانضباطي والسلوكي (25 درجة)",
+        items: [
+            { id: "c1_1", name: "الالتزام ببروتوكول العمل (المظهر والنظافة)", max: 5 },
+            { id: "c1_2", name: "الانضباط في المواعيد (الحضور والانصراف والبريك والصلاة)", max: 5 },
+            { id: "c1_3", name: "الالتزام بالسلوك المهني والمحافظة على بيئة عمل مناسبة للتركيز والإنتاجية", max: 5 }, 
+            { id: "c1_4", name: "اللباقة وحسن المعاملة مع الإدارات المختلفة", max: 10 } 
+        ]
+    },
+    {
+        axis: "2. جودة الأداء والفعالية الرقابية (35 درجة)",
+        items: [
+            { id: "c2_1", name: "سرعة ودقة تنفيذ مهام المراجعة اليومية", max: 15 },
+            { id: "c2_2", name: "كفاءة اكتشاف الأخطاء والابلاغ عنها ومتابعة علاجها", max: 10 },
+            { id: "c2_3", name: "إعداد التقارير الدورية بشكل منتظم ودقيق", max: 10 }
+        ]
+    },
+    {
+    axis: "3. التطوير الذاتي والابتكار (20 درجة)",
+    items: [
+        { id: "c3_1", name: "الالتزام بالكورسات المقررة والسعي لتطوير الذات علمياً", max: 10 },
+        { id: "c3_2", name: "المبادرة والتدريب على أقسام مراجعة أخرى (تطوير عملي)", max: 5 },
+        { id: "c3_3", name: "تقديم مقترحات واقعية لتطوير الإجراءات أو تقليل الهالك", max: 5 }
+    ]
+},
+{
+    axis: "4. التعاون ونقل الخبرة (20 درجة)",
+    items: [
+        { id: "c4_1", name: "القدرة على نقل الخبرات وتدريب الآخرين", max: 10 },
+        { id: "c4_2", name: "المرونة والتعاون الإيجابي مع الزملاء داخل المكتب", max: 10 }
+    ]
+}
+];
+
+const baseEmployeesDataset = [
+    { id: 122, name: "ياسر أحمد" }, { id: 236, name: "السيد ناصر" }, { id: 942, name: "أحمد خميس" },
+    { id: 3954, name: "عماد جمال" }, { id: 4795, name: "وائل علي" }, { id: 5078, name: "مصطفى عبد الحميد" },
+    { id: 5328, name: "إسلام عبد العزيز" }, { id: 5483, name: "أشرف أحمد" }, { id: 5846, name: "أحمد علم الدين" },
+    { id: 6208, name: "محمد ياقوت" }, { id: 7099, name: "أحمد السيد يوسف" }, { id: 7195, name: "محمد أبو الحسن" },
+    { id: 7483, name: "محمد ربيع" }, { id: 10106, name: "محمود إبراهيم" }, { id: 10258, name: "محمود أحمد علي" },
+    { id: 10384, name: "محمد عزت" }, { id: 10513, name: "محمد سليمان" }, { id: 11349, name: "أحمد الشعراوى" },
+    { id: 11627, name: "أحمد الدليل" }, { id: 13329, name: "محمد منصور" }, { id: 14683, name: "كريم كامل" },
+    { id: 16188, name: "محمد عبد الوهاب" }, { id: 16190, name: "إسلام حمدي" }, { id: 16936, name: "محمد سمير" },
+    { id: 22903, name: "مصطفى يوسف" },
+{ id: 25518, name: "إبراهيم السيد" },
+{ id: 18947, name: "أمل محمد" },
+{ id: 27685, name: "رحمة محمود" },
+    
+];
+
+let monthlyArchive = {};
+let isDarkMode = false;
+let evaluatorDisplayNames = JSON.parse(
+    localStorage.getItem('GomlaAudit_EvaluatorNames') || '{}'
+);
+function refreshEvaluatorHeaders() {
+
+    const map = {
+        tl_first: "رئيس الفريق",
+        tl_second: "رئيس الفريق",
+        tl_third: "رئيس الفريق",
+        tl_stock: "تيم ليدر",
+        tl_finance: "تيم ليدر",
+        tl_special: "تيم ليدر"
+    };
+
+    Object.keys(map).forEach(role => {
+
+        const th = document.getElementById("head_" + role);
+
+        if (!th) return;
+
+        const name = evaluatorDisplayNames[role] || "";
+
+        let subTitle = "";
+
+        if(role === "tl_first") subTitle = "الأول";
+        if(role === "tl_second") subTitle = "الثاني";
+        if(role === "tl_third") subTitle = "الثالث";
+        if(role === "tl_stock") subTitle = "المخزون";
+        if(role === "tl_finance") subTitle = "المالية";
+        if(role === "tl_special") subTitle = "المتخصصة";
+
+        th.innerHTML =
+            map[role] +
+            '<span class="th-sub">' +
+            subTitle +
+            (name ? ' - ' + name : '') +
+            '</span>';
+    });
+
+}
+window.onload = function() {
+    initApp();
+};
+
+function initApp() {
+    const saved = localStorage.getItem('GomlaAudit_Archive');
+    if (saved) monthlyArchive = JSON.parse(saved);
+    
+    const empSelect = document.getElementById('employeeSelect');
+    empSelect.innerHTML = '';
+  baseEmployeesDataset.forEach(e => {
+        let opt = document.createElement('option');
+        opt.value = e.id; opt.textContent = e.name + ' (' + e.id + ')';
+        empSelect.appendChild(opt);
+    });
+   const employeeFilterSelect = document.getElementById('employeeFilterSelect');
+if(employeeFilterSelect){
+    employeeFilterSelect.innerHTML = '<option value="">جميع الموظفين</option>';
+
+    baseEmployeesDataset
+    .filter(e =>
+        e.id !== 18947 &&
+        e.id !== 27685
+    )
+    .forEach(e => {
+        let opt = document.createElement('option');
+        opt.value = e.id;
+        opt.textContent = e.name + ' (' + e.id + ')';
+        employeeFilterSelect.appendChild(opt);
+    });
+}
+
+      refreshEvaluatorHeaders();
+    buildCriteriaForm();
+    loadSavedInputsIfExist();
+    syncDataLive(false);
+}
+
+function buildCriteriaForm() {
+    const container = document.getElementById('criteriaContainer');
+    container.innerHTML = '';
+    criteriaDefinition.forEach(block => {
+        const title = document.createElement('div');
+        title.className = 'axis-title'; title.textContent = block.axis;
+        container.appendChild(title);
+        block.items.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'criterion-row';
+            row.innerHTML = '<span>' + item.name + ' <strong style="color:var(--primary)">(حد أقصى ' + item.max + ')</strong></span>' +
+                '<input type="number" id="' + item.id + '" min="0" max="' + item.max + '" value="0" oninput="validateLive(this, ' + item.max + ')">';
+            container.appendChild(row);
+        });
+    });
+}
+
+function validateLive(input, max) {
+    if (parseFloat(input.value) > max) input.value = max;
+    if (parseFloat(input.value) < 0 || input.value === "") input.value = 0;
+    calculateLiveTotal();
+}
+
+function calculateLiveTotal() {
+    let sum = 0;
+    criteriaDefinition.forEach(b => b.items.forEach(item => {
+        const el = document.getElementById(item.id);
+        if (el) sum += parseFloat(el.value) || 0;
+    }));
+    document.getElementById('totalCalculatedScore').value = sum + " / 100";
+    return sum;
+}
+
+function loadSavedInputsIfExist() {
+    const m = document.getElementById('globalMonthSelect').value;
+    const id = parseInt(document.getElementById('employeeSelect').value);
+    const role = document.getElementById('evaluatorTypeSelect').value;
+    
+    criteriaDefinition.forEach(b => b.items.forEach(item => {
+        const el = document.getElementById(item.id); if (el) el.value = 0;
+    }));
+
+    const clearedMonths = JSON.parse(localStorage.getItem('GomlaAudit_ClearedMonths') || '[]');
+    if (clearedMonths.includes(m)) {
+        calculateLiveTotal();
+        return;
+    }
+
+    if (monthlyArchive[m] && monthlyArchive[m][id]) {
+        let rec = monthlyArchive[m][id];
+        if (rec.detailedBreakdown && rec.detailedBreakdown[role]) {
+            let data = rec.detailedBreakdown[role];
+            criteriaDefinition.forEach(b => b.items.forEach(item => {
+                const el = document.getElementById(item.id);
+                if (el && data[item.id] !== undefined) el.value = data[item.id];
+            }));
+        }
+    }
+    calculateLiveTotal();
+}
+
+function saveEvaluationScore() {
+    const m = document.getElementById('globalMonthSelect').value;
+    const id = parseInt(document.getElementById('employeeSelect').value);
+    const roleKey = document.getElementById('evaluatorTypeSelect').value;
+    const evaluatorPersonId = document.getElementById('employeeFilterSelect').value;
+
+const evaluatorPersonObj =
+    baseEmployeesDataset.find(x => String(x.id) === String(evaluatorPersonId));
+
+const evaluatorPersonName =
+    evaluatorPersonObj ? evaluatorPersonObj.name : "";
+    let clearedMonths = JSON.parse(localStorage.getItem('GomlaAudit_ClearedMonths') || '[]');
+    if (clearedMonths.includes(m)) {
+        clearedMonths = clearedMonths.filter(x => x !== m);
+        localStorage.setItem('GomlaAudit_ClearedMonths', JSON.stringify(clearedMonths));
+    }
+
+    const currentScore = calculateLiveTotal();
+    let detailed = {};
+    criteriaDefinition.forEach(b => b.items.forEach(item => {
+        const el = document.getElementById(item.id);
+        detailed[item.id] = el ? (parseFloat(el.value) || 0) : 0;
+    }));
+
+    if (!monthlyArchive[m]) monthlyArchive[m] = {};
+    if (!monthlyArchive[m][id]) {
+        monthlyArchive[m][id] = {
+            scores: { manager: 0, deputy1: 0, deputy2: 0, tl_first: 0, tl_second: 0, tl_third: 0, tl_stock: 0, tl_finance: 0, tl_special: 0 },
+            detailedBreakdown: { manager: {}, deputy1: {}, deputy2: {}, tl_first: {}, tl_second: {}, tl_third: {}, tl_stock: {}, tl_finance: {}, tl_special: {} }
+        };
+    }
+    
+    // الأمان لضمان بنية كود الـ 9 جهات بالكامل
+    if(monthlyArchive[m][id].scores.tl_first === undefined) {
+        let oldScores = monthlyArchive[m][id].scores;
+        monthlyArchive[m][id].scores = {
+            manager: oldScores.manager || 0,
+            deputy1: oldScores.deputy1 || 0,
+            deputy2: oldScores.deputy2 || 0,
+            tl_first: oldScores.tl_first || 0,
+            tl_second: oldScores.tl_second || 0,
+            tl_third: oldScores.tl_third || 0,
+            tl_stock: oldScores.tl_stock || 0,
+            tl_finance: oldScores.tl_finance || 0,
+            tl_special: oldScores.tl_special || 0
+        };
+    }
+
+    monthlyArchive[m][id].scores[roleKey] = currentScore;
+    monthlyArchive[m][id].detailedBreakdown[roleKey] = detailed;
+    if (
+    roleKey === 'tl_first' ||
+    roleKey === 'tl_second' ||
+    roleKey === 'tl_third' ||
+    roleKey === 'tl_stock' ||
+    roleKey === 'tl_finance' ||
+    roleKey === 'tl_special'
+) {
+    evaluatorDisplayNames[roleKey] = evaluatorPersonName;
+    localStorage.setItem(
+        'GomlaAudit_EvaluatorNames',
+        JSON.stringify(evaluatorDisplayNames)
+    );
+}
+    localStorage.setItem('GomlaAudit_Archive', JSON.stringify(monthlyArchive));
+
+    const btn = document.querySelector('.btn-save');
+    btn.textContent = "⏳ جاري الرفع والمزامنة السحابية..."; btn.disabled = true;
+
+    // تم التحويل من إرسال البيانات عبر رابط GET (كان بيسبب خطأ "تعذر الاتصال" بسبب طول الرابط
+    // كل ما الأرشيف يكبر) إلى إرسالها عبر POST داخل جسم الطلب، وليس له نفس حد الطول.
+    const formData = new URLSearchParams();
+    formData.append('action', 'save');
+    formData.append('sheet', TARGET_SHEET_NAME);
+    formData.append('data', JSON.stringify(monthlyArchive));
+
+    fetch(CLOUD_STORAGE_URL, {
+        method: 'POST',
+        mode: 'no-cors', // لتفادي قيود CORS الخاصة بـ Apps Script؛ الرد بيبقى غير قابل للقراءة هنا
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: formData.toString()
+    })
+    .then(function() {
+        // بما إن no-cors مبيسمحش بقراءة رد السيرفر، بنعمل طلب GET فوري (بنفس أسلوب JSONP القديم
+        // اللي شغال بدون مشاكل للقراءة) عشان نتأكد إن الحفظ اتم فعلاً ونحدث الواجهة بالنسخة المؤكدة.
+        const script = document.createElement('script');
+        script.src = CLOUD_STORAGE_URL + "?action=get&sheet=" + encodeURIComponent(TARGET_SHEET_NAME) + "&callback=onCloudSaveSuccess";
+        script.onerror = function() {
+            btn.textContent = "حفظ التقييم ومزامنته مع جميع الأجهزة فوراً"; btn.disabled = false;
+            alert("✅ تم إرسال التقييم للسيرفر، لكن تعذر تأكيد المزامنة فوراً. اضغط 'تحديث ومزامنة فورية' للتأكد.");
+        };
+        document.body.appendChild(script);
+    })
+    .catch(function(err) {
+        btn.textContent = "حفظ التقييم ومزامنته مع جميع الأجهزة فوراً"; btn.disabled = false;
+        alert("⚠️ عذراً، تعذر الاتصال بسيرفر جوجل، لكن تم الحفظ مؤقتاً في ذاكرة جهازك.");
+    });
+}
+
+function onCloudSaveSuccess(response) {
+
+    console.log("SUCCESS CALLBACK");
+    console.log(response);
+
+    if(response && response.archive) {
+        monthlyArchive = response.archive;
+        localStorage.setItem('GomlaAudit_Archive', JSON.stringify(monthlyArchive));
+    }
+
+    const btn = document.querySelector('.btn-save');
+    if(btn){
+        btn.textContent = "حفظ التقييم ومزامنته مع جميع الأجهزة فوراً";
+        btn.disabled = false;
+    }
+
+    renderAndSortDashboard();
+    refreshEvaluatorHeaders();
+    renderHistorySidebar();
+    switchTab('leaderboard');
+
+    alert("تم الحفظ");
+}function syncDataLive(showAlert = true) {
+    const btn = document.querySelector('.btn-refresh');
+    if (showAlert && btn) btn.textContent = "⏳ جاري فحص ومزامنة البيانات...";
+
+    const script = document.createElement('script');
+    script.src = CLOUD_STORAGE_URL + "?action=get&sheet=" + encodeURIComponent(TARGET_SHEET_NAME) + "&callback=onCloudFetchSuccess";
+    
+    script.onerror = function() {
+        if (showAlert) alert("⚠️ تعذر الاتصال بالسيرفر. يعتمد التقرير الآن على البيانات المحفوظة محلياً.");
+        if (btn) btn.textContent = "🔄 تحديث ومزامنة فورية لكل الأجهزة";
+    };
+    
+    document.body.appendChild(script);
+}
+
+function onCloudFetchSuccess(response) {
+    if (response && response.archive) {
+        monthlyArchive = response.archive;
+        localStorage.setItem('GomlaAudit_Archive', JSON.stringify(monthlyArchive));
+    }
+    renderAndSortDashboard(); renderHistorySidebar(); loadSavedInputsIfExist();
+    const btn = document.querySelector('.btn-refresh');
+    if (btn) btn.textContent = "🔄 تحديث ومزامنة فورية لكل الأجهزة";
+}
+
+function renderAndSortDashboard() {
+    const m = document.getElementById('globalMonthSelect').value;
+    const body = document.getElementById('evaluationTableBody'); if(!body) return;
+    body.innerHTML = '';
+    
+    const clearedMonths = JSON.parse(localStorage.getItem('GomlaAudit_ClearedMonths') || '[]');
+    const isCleared = clearedMonths.includes(m);
+
+    let list = baseEmployeesDataset.map(emp => {
+        let rec = (!isCleared && monthlyArchive[m] && monthlyArchive[m][emp.id]) ? monthlyArchive[m][emp.id] : null;
+        let tot = 0, count = 0;
+        
+        if(rec && rec.scores) {
+    evaluatorRoles.forEach(r => {
+
+        // استبعاد مدير الإدارة مؤقتاً من المتوسط
+        if (r.key === 'manager') return;
+
+       if(r.key !== 'manager' &&
+   rec.scores[r.key] !== undefined &&
+   rec.scores[r.key] > 0) {
+    tot += rec.scores[r.key];
+    count++;
+}
+    });
+}
+        return { emp, rec, avg: count > 0 ? (tot/count).toFixed(2) : "0.00", count };
+    });
+
+    list.sort((a,b) => parseFloat(b.avg) - parseFloat(a.avg));
+
+    list.forEach((item, idx) => {
+        let tr = document.createElement('tr');
+        let r = item.rec;
+        let stClass = item.count === 8 ? 'status-complete' : 'status-pending';
+        let stText = item.count === 9 ? 'مكتمل' : 'معلق (' + item.count + '/8)';
+
+        let rowHtml = '<td><span class="rank-badge">' + (idx+1) + '</span></td>' +
+                      '<td>' + item.emp.id + '</td>' +
+                      '<td class="emp-name">' + item.emp.name + '</td>';
+        
+        // بناء قيم الخلايا للـ 9 جهات ديناميكياً
+        evaluatorRoles.forEach(role => {
+            let val = (r && r.scores && r.scores[role.key]) ? r.scores[role.key] : '-';
+            rowHtml += '<td>' + val + '</td>';
+        });
+
+        rowHtml += '<td class="final-avg">' + item.avg + '</td>' +
+                   '<td><span class="status-badge ' + stClass + '">' + stText + '</span></td>';
+        
+        tr.innerHTML = rowHtml;
+        body.appendChild(tr);
+    });
+}
+
+function renderHistorySidebar() {
+    const m = document.getElementById('globalMonthSelect').value;
+    const sb = document.getElementById('historySidebar'); if(!sb) return;
+    sb.innerHTML = '';
+
+    const clearedMonths = JSON.parse(localStorage.getItem('GomlaAudit_ClearedMonths') || '[]');
+    const isCleared = clearedMonths.includes(m);
+
+    baseEmployeesDataset.forEach(emp => {
+        let div = document.createElement('div'); div.className = 'sidebar-item';
+        let has = !isCleared && monthlyArchive[m] && monthlyArchive[m][emp.id];
+        let info = "—";
+        if (has) {
+            let tot=0, c=0;
+            evaluatorRoles.forEach(r=>{
+
+    // استبعاد مدير الإدارة مؤقتاً
+    if (r.key === 'manager') return;
+
+    if(monthlyArchive[m][emp.id].scores[r.key] &&
+       monthlyArchive[m][emp.id].scores[r.key]>0){
+        tot+=monthlyArchive[m][emp.id].scores[r.key];
+        c++;
+    }
+});
+            if(c>0) info = (tot/c).toFixed(1) + " م";
+        }
+        div.innerHTML = '<span>' + emp.name + '</span><span style="font-size:11px;background:rgba(0,0,0,0.05);padding:2px 6px;border-radius:4px;">' + info + '</span>';
+        div.onclick = () => {
+            document.querySelectorAll('.sidebar-item').forEach(el=>el.classList.remove('selected'));
+            div.classList.add('selected'); showDetails(emp.id, emp.name);
+        };
+        sb.appendChild(div);
+    });
+}
+
+function showDetails(id, name) {
+    const m = document.getElementById('globalMonthSelect').value;
+    const panel = document.getElementById('historyDetailsPanel');
+
+    const clearedMonths = JSON.parse(localStorage.getItem('GomlaAudit_ClearedMonths') || '[]');
+    if (clearedMonths.includes(m) || !monthlyArchive[m] || !monthlyArchive[m][id]) {
+        panel.innerHTML = '<h3>📋 تقرير فحص درجات: ' + name + ' ('+ id +')</h3><div class="empty-state">❌ لا توجد تقييمات مسجلة لهذا الموظف في هذا الشهر.</div>'; return;
+    }
+    let rec = monthlyArchive[m][id];
+    let htmlContent = '<h3>📋 تقرير فحص درجات: <span style="color:var(--primary)">' + name + ' (' + id + ')</span></h3>';
+    htmlContent += '<div style="margin-top:15px; margin-bottom:15px;"><label style="font-weight:700;">🔍 اختر جهة التقييم لعرض بنودها التفصيلية:</label>';
+    htmlContent += '<select id="historyRoleSelect" class="month-select" style="width:100%; margin-top:8px;" onchange="renderHistoryDetailedCriteria('+id+')">';
+    
+    evaluatorRoles.forEach(role => {
+        let score = (rec.scores && rec.scores[role.key]) ? rec.scores[role.key] : 0;
+        let selectedAttr = (role.key === 'deputy1') ? 'selected' : '';
+        htmlContent += '<option value="' + role.key + '" ' + selectedAttr + '>' + role.label + ' — [' + score + ' درجة]</option>';
+    });
+    
+    htmlContent += '</select></div>';
+    htmlContent += '<div id="historyCriteriaDisplayBox"></div>';
+    panel.innerHTML = htmlContent;
+    renderHistoryDetailedCriteria(id);
+}
+
+function renderHistoryDetailedCriteria(empId) {
+    const m = document.getElementById('globalMonthSelect').value;
+    const roleKey = document.getElementById('historyRoleSelect').value;
+    const displayBox = document.getElementById('historyCriteriaDisplayBox');
+    let rec = monthlyArchive[m][empId];
+    let totalScoreForRole = (rec.scores && rec.scores[roleKey]) ? rec.scores[roleKey] : 0;
+    let breakdown = rec.detailedBreakdown ? (rec.detailedBreakdown[roleKey] || {}) : {};
+    
+    if (totalScoreForRole === 0) {
+        displayBox.innerHTML = '<div class="empty-state" style="margin-top:40px; color:var(--danger)">⚠️ لم يتم رصد درجات تفصيلية من هذه الجهة لهذا الموظف بعد.</div>'; return;
+    }
+    let html = '<div style="background:var(--primary); color:white; padding:10px; font-weight:700; border-radius:6px; margin-bottom:15px; text-align:center;">إجمالي درجة الجهة الحالية: ' + totalScoreForRole + ' / 100 درجة</div>';
+    criteriaDefinition.forEach(block => {
+        html += '<div class="axis-title" style="background:var(--mid);">' + block.axis + '</div><div style="background:#fcfcfc; border:1px solid #ddd; padding:10px; border-radius:6px;">';
+        block.items.forEach(item => {
+            let score = breakdown[item.id] !== undefined ? breakdown[item.id] : "-";
+            html += '<div class="history-row"><span>' + item.name + '</span><strong style="color:var(--primary);">' + score + ' / ' + item.max + '</strong></div>';
+        });
+        html += '</div>';
+    });
+    displayBox.innerHTML = html;
+}
+
+function handleMonthChange() {
+    const txt = document.getElementById('globalMonthSelect').options[document.getElementById('globalMonthSelect').selectedIndex].text;
+    document.getElementById('evaluateBoxTitle').textContent = 'إدخال وبناء درجات المحاور لشهر (' + txt + ')';
+    loadSavedInputsIfExist(); syncDataLive(false);
+}
+
+function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const targetBtn = document.getElementById('tab-btn-' + id);
+    const targetPage = document.getElementById('page-' + id);
+    if (targetBtn && targetPage) { targetBtn.classList.add('active'); targetPage.classList.add('active'); }
+    if(id === 'leaderboard' || id === 'history') { syncDataLive(false); }
+}
+
+function toggleTheme() { isDarkMode = !isDarkMode; document.documentElement.setAttribute('data-theme', isDarkMode?'dark':'light'); }
+
+function printCurrentActivePage() {
+    document.body.classList.add('print-active-tab-only');
+    window.print();
+    setTimeout(() => {
+        document.body.classList.remove('print-active-tab-only');
+    }, 500);
+}
+
+function openResetMenu() { 
+    const m = document.getElementById('globalMonthSelect').value;
+    if(confirm(`⚠️ تأكيد إخلاء الواجهة لشهر (${m})\n\nهل أنت متأكد من مسح وإفراغ الجداول الحالية على الشاشة لهذا الشهر فقط؟`)) { 
+        try {
+            let clearedMonths = JSON.parse(localStorage.getItem('GomlaAudit_ClearedMonths') || '[]');
+            if (!clearedMonths.includes(m)) {
+                clearedMonths.push(m);
+                localStorage.setItem('GomlaAudit_ClearedMonths', JSON.stringify(clearedMonths));
+            }
+            criteriaDefinition.forEach(b => b.items.forEach(item => {
+                const el = document.getElementById(item.id); if (el) el.value = 0;
+            }));
+            calculateLiveTotal(); renderAndSortDashboard(); renderHistorySidebar();
+            const panel = document.getElementById('historyDetailsPanel');
+            if(panel) { panel.innerHTML = '<div class="empty-state">💡 اضغط على اسم الموظف من القائمة الجانبية لاستعراض وفحص درجاته التفصيلية.</div>'; }
+            alert("✅ تم مسح التقرير وإفراغ الواجهة الحالية بنجاح، والأرشيف السحابي داخل جوجل شيت آمن ومحفوظ بالكامل.");
+        } catch (err) { alert("❌ حدث خطأ غير متوقع: " + err.message); }
+    } 
+}
+
+function wipeAllDataAndCloudStore() {
+    if(confirm(`🚨🚨 تحذير قطعي ونهائي (فرمتة كاملة للمنظومة)\n\nانتبه يا فندم: هذا الإجراء سيقوم بحذف الذاكرة المؤقتة بالكامل، وتصفير الأرشيف لجميع الشهور، ومسح بيانات ملف الجوجل شيت سحابياً لتتمكن من البدء من جديد تماماً بدون أي بيانات سابقة.\n\nهل أنت متأكد وتريد الفرمتة الشاملة؟`)) {
+        try {
+            localStorage.clear();
+            monthlyArchive = {};
+
+            criteriaDefinition.forEach(b => b.items.forEach(item => {
+                const el = document.getElementById(item.id); if (el) el.value = 0;
+            }));
+            
+            calculateLiveTotal();
+            renderAndSortDashboard();
+            renderHistorySidebar();
+
+            const panel = document.getElementById('historyDetailsPanel');
+            if(panel) {
+                panel.innerHTML = '<div class="empty-state">💡 اضغط على اسم الموظف من القائمة الجانبية لاستعراض وفحص درجاته التفصيلية.</div>';
+            }
+
+            const formData = new URLSearchParams();
+            formData.append('action', 'save');
+            formData.append('sheet', TARGET_SHEET_NAME);
+            formData.append('data', JSON.stringify({}));
+
+            fetch(CLOUD_STORAGE_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                body: formData.toString()
+            }).catch(function() {
+                alert("⚠️ تم الفرمتة محلياً، ولكن تعذر الاتصال بالسيرفر لتصفير الجوجل شيت سحابياً.");
+            });
+
+            alert("💥 تم بنجاح فرمتة المنظومة بالكامل، ومسح الذاكرة المحلية لجهازك، وتصفير ملف جوجل شيت سحابياً للبدء بيضاء من الصفر.");
+        } catch (err) {
+            alert("❌ حدث خطأ أثناء تنفيذ الفرمتة الشاملة: " + err.message);
+        }
+    }
+}
+</script>
+</body>
+</html>
