@@ -212,6 +212,7 @@
 
     <div id="page-leaderboard" class="page">
         <div class="table-title" id="leaderboardTableTitle">🏆 ترتيب المتسابقين وتحديد الفائز</div>
+        <div id="majorityInfoLine" style="margin-bottom:15px; font-size:13px; font-weight:700; color:var(--mid);"></div>
         <div class="table-container">
             <table>
                 <thead>
@@ -638,7 +639,7 @@ function renderAndSortDashboard() {
         if(rec && rec.scores) {
     evaluatorRoles.forEach(r => {
 
-        // استبعاد مدير الإدارة مؤقتاً من المتوسط
+        // استبعاد مدير الإدارة مؤقتاً من المتوسط (نفس القاعدة الموجودة أصلاً)
         if (r.key === 'manager') return;
 
        if(r.key !== 'manager' &&
@@ -649,16 +650,53 @@ function renderAndSortDashboard() {
 }
     });
 }
-        return { emp, rec, avg: count > 0 ? (tot/count).toFixed(2) : "0.00", count };
+        // عدد أعضاء اللجنة الفعلي (بدون مدير الإدارة) وحساب حد الأغلبية المطلوب ديناميكياً
+        // القاعدة: الحد الأدنى = Floor(عدد الأعضاء ÷ 2) + 1 — بيشتغل صح مهما كان عدد الأعضاء (8 أو 9 أو غيره)
+        const committeeSize = evaluatorRoles.filter(r => r.key !== 'manager').length;
+        const majorityThreshold = Math.floor(committeeSize / 2) + 1;
+        const isEligible = count >= majorityThreshold;
+
+        return {
+            emp, rec,
+            avg: count > 0 ? (tot/count).toFixed(2) : "0.00",
+            count, committeeSize, majorityThreshold, isEligible
+        };
     });
 
-    list.sort((a,b) => parseFloat(b.avg) - parseFloat(a.avg));
+    // الأولوية دايماً للموظفين اللي حققوا شرط الأغلبية، وبعدين الترتيب بالمتوسط الأعلى.
+    // موظف غير مؤهل (ميحققش الأغلبية) بيفضل ظاهر في الجدول بدرجته، لكن مبيتقدمش على أي موظف مؤهل
+    // حتى لو متوسطه أعلى.
+    list.sort((a,b) => {
+        if (a.isEligible !== b.isEligible) return a.isEligible ? -1 : 1;
+        return parseFloat(b.avg) - parseFloat(a.avg);
+    });
+
+    if (list.length > 0) {
+        const infoLine = document.getElementById('majorityInfoLine');
+        if (infoLine) {
+            infoLine.textContent = 'عدد أعضاء اللجنة هذا الشهر: ' + list[0].committeeSize +
+                ' | الحد الأدنى المطلوب للتأهل (شرط الأغلبية): ' + list[0].majorityThreshold + ' مقيمين على الأقل';
+        }
+    }
 
     list.forEach((item, idx) => {
         let tr = document.createElement('tr');
         let r = item.rec;
-        let stClass = item.count === 8 ? 'status-complete' : 'status-pending';
-        let stText = item.count === 9 ? 'مكتمل' : 'معلق (' + item.count + '/8)';
+
+        let stClass, stText;
+        if (item.count === 0) {
+            stClass = 'status-pending';
+            stText = 'لا توجد تقييمات بعد (0/' + item.committeeSize + ')';
+        } else if (!item.isEligible) {
+            stClass = 'status-pending';
+            stText = '❌ غير مؤهل - لم يحقق الأغلبية (' + item.count + '/' + item.committeeSize + ')';
+        } else if (item.count === item.committeeSize) {
+            stClass = 'status-complete';
+            stText = 'مكتمل - مؤهل للمنافسة (' + item.count + '/' + item.committeeSize + ')';
+        } else {
+            stClass = 'status-complete';
+            stText = '✅ مؤهل للمنافسة (' + item.count + '/' + item.committeeSize + ')';
+        }
 
         let rowHtml = '<td><span class="rank-badge">' + (idx+1) + '</span></td>' +
                       '<td>' + item.emp.id + '</td>' +
@@ -784,42 +822,24 @@ function printCurrentActivePage() {
 }
 
 function openResetMenu() {
-    const m = document.getElementById('globalMonthSelect').value;
-    if(confirm(`⚠️ تأكيد حذف بيانات شهر (${m}) نهائياً من السحابة\n\nهذا الإجراء سيحذف كل تقييمات هذا الشهر فعلياً من جوجل شيت ومن كل الأجهزة، وليس من جهازك فقط.\n\nهل أنت متأكد؟`)) {
-        try {
-            const btn = document.querySelector('.btn-danger');
-            if (btn) { btn.disabled = true; }
+    if(confirm(`🗑️ تفريغ نموذج "رصد تقييم جديد"\n\nهيتم إرجاع النموذج الحالي على الشاشة لوضعه الافتراضي (تصفير كل الدرجات المدخلة) عشان تقدر تبدأ تقييم موظف جديد بسهولة.\n\nملحوظة مهمة: التقييمات المحفوظة فعلياً على السحابة (جوجل شيت) لن تتأثر أو تُحذف إطلاقاً — هذا الزر بيفرّغ شاشتك الحالية فقط.\n\nهل تريد المتابعة؟`)) {
+        criteriaDefinition.forEach(b => b.items.forEach(item => {
+            const el = document.getElementById(item.id); if (el) el.value = 0;
+        }));
 
-            // ملحوظة مهمة: ده أصبح إجراء حقيقي بيتزامن مع السيرفر (مش إخفاء محلي زي الأول)،
-            // عشان لما تعمله يبقى نفس النتيجة ظاهرة عند كل الزملاء، مش عندك بس.
-            const formData = new URLSearchParams();
-            formData.append('action', 'clearMonth');
-            formData.append('sheet', TARGET_SHEET_NAME);
-            formData.append('month', m);
+        const employeeSelect = document.getElementById('employeeSelect');
+        if (employeeSelect) employeeSelect.selectedIndex = 0;
 
-            fetch(CLOUD_STORAGE_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-                body: formData.toString()
-            }).then(function() {
-                const script = document.createElement('script');
-                script.src = CLOUD_STORAGE_URL + "?action=get&sheet=" + encodeURIComponent(TARGET_SHEET_NAME) + "&callback=onCloudFetchSuccess";
-                document.body.appendChild(script);
+        const evaluatorTypeSelect = document.getElementById('evaluatorTypeSelect');
+        if (evaluatorTypeSelect) evaluatorTypeSelect.value = 'deputy1';
 
-                criteriaDefinition.forEach(b => b.items.forEach(item => {
-                    const el = document.getElementById(item.id); if (el) el.value = 0;
-                }));
-                calculateLiveTotal();
-                const panel = document.getElementById('historyDetailsPanel');
-                if(panel) { panel.innerHTML = '<div class="empty-state">💡 اضغط على اسم الموظف من القائمة الجانبية لاستعراض وفحص درجاته التفصيلية.</div>'; }
-                if (btn) { btn.disabled = false; }
-                alert("✅ تم حذف بيانات هذا الشهر من السحابة نهائياً، وسيظهر هذا لكل الزملاء تلقائياً.");
-            }).catch(function() {
-                if (btn) { btn.disabled = false; }
-                alert("⚠️ تعذر الاتصال بالسيرفر، لم يتم حذف بيانات الشهر. حاول تاني.");
-            });
-        } catch (err) { alert("❌ حدث خطأ غير متوقع: " + err.message); }
+        const employeeFilterSelect = document.getElementById('employeeFilterSelect');
+        if (employeeFilterSelect) employeeFilterSelect.value = '';
+
+        calculateLiveTotal();
+        switchTab('evaluate');
+
+        alert("✅ تم تفريغ النموذج، ابدأ تقييم جديد دلوقتي.");
     }
 }
 
