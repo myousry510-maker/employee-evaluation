@@ -393,6 +393,9 @@ if(employeeFilterSelect){
     buildCriteriaForm();
     loadSavedInputsIfExist();
     syncDataLive(false);
+
+    // مزامنة تلقائية كل 15 ثانية عشان كل الأجهزة تتحدث لبعض من غير تدخل يدوي
+    setInterval(backgroundSync, 15000);
 }
 
 function buildCriteriaForm() {
@@ -437,12 +440,6 @@ function loadSavedInputsIfExist() {
         const el = document.getElementById(item.id); if (el) el.value = 0;
     }));
 
-    const clearedMonths = JSON.parse(localStorage.getItem('GomlaAudit_ClearedMonths') || '[]');
-    if (clearedMonths.includes(m)) {
-        calculateLiveTotal();
-        return;
-    }
-
     if (monthlyArchive[m] && monthlyArchive[m][id]) {
         let rec = monthlyArchive[m][id];
         if (rec.detailedBreakdown && rec.detailedBreakdown[role]) {
@@ -467,11 +464,6 @@ const evaluatorPersonObj =
 
 const evaluatorPersonName =
     evaluatorPersonObj ? evaluatorPersonObj.name : "";
-    let clearedMonths = JSON.parse(localStorage.getItem('GomlaAudit_ClearedMonths') || '[]');
-    if (clearedMonths.includes(m)) {
-        clearedMonths = clearedMonths.filter(x => x !== m);
-        localStorage.setItem('GomlaAudit_ClearedMonths', JSON.stringify(clearedMonths));
-    }
 
     const currentScore = calculateLiveTotal();
     let detailed = {};
@@ -525,12 +517,19 @@ const evaluatorPersonName =
     const btn = document.querySelector('.btn-save');
     btn.textContent = "⏳ جاري الرفع والمزامنة السحابية..."; btn.disabled = true;
 
-    // تم التحويل من إرسال البيانات عبر رابط GET (كان بيسبب خطأ "تعذر الاتصال" بسبب طول الرابط
-    // كل ما الأرشيف يكبر) إلى إرسالها عبر POST داخل جسم الطلب، وليس له نفس حد الطول.
+    // مهم جداً: بنبعت فقط "التعديل الجديد" (الشهر + كود الموظف + جهة التقييم + الدرجات)
+    // بدل ما نبعت الأرشيف بالكامل. ده عشان لو زميل تاني بيحفظ تقييم لموظف مختلف في نفس اللحظة،
+    // كل تعديل يتحفظ فوق التاني بدل ما يمسحه (كان ده سبب اختفاء وظهور البيانات بشكل عشوائي).
+    // السيرفر هو اللي بيدمج التعديل الجديد مع باقي بيانات الأرشيف الموجودة عنده فعلاً.
     const formData = new URLSearchParams();
     formData.append('action', 'save');
     formData.append('sheet', TARGET_SHEET_NAME);
-    formData.append('data', JSON.stringify(monthlyArchive));
+    formData.append('month', m);
+    formData.append('employeeId', id);
+    formData.append('roleKey', roleKey);
+    formData.append('score', currentScore);
+    formData.append('detailed', JSON.stringify(detailed));
+    formData.append('evaluatorName', evaluatorPersonName);
 
     fetch(CLOUD_STORAGE_URL, {
         method: 'POST',
@@ -555,15 +554,26 @@ const evaluatorPersonName =
     });
 }
 
+// دالة موحّدة تستقبل نسخة الأرشيف "الرسمية" الراجعة من السيرفر وتطبقها محلياً،
+// بما فيها أسماء المُقيّمين (رؤساء الفرق/التيم ليدر)، عشان تفضل موحّدة عند كل الأجهزة
+function applyServerArchive(response) {
+    if (response && response.archive) {
+        monthlyArchive = response.archive;
+        localStorage.setItem('GomlaAudit_Archive', JSON.stringify(monthlyArchive));
+
+        if (monthlyArchive._meta && monthlyArchive._meta.evaluatorNames) {
+            evaluatorDisplayNames = monthlyArchive._meta.evaluatorNames;
+            localStorage.setItem('GomlaAudit_EvaluatorNames', JSON.stringify(evaluatorDisplayNames));
+        }
+    }
+}
+
 function onCloudSaveSuccess(response) {
 
     console.log("SUCCESS CALLBACK");
     console.log(response);
 
-    if(response && response.archive) {
-        monthlyArchive = response.archive;
-        localStorage.setItem('GomlaAudit_Archive', JSON.stringify(monthlyArchive));
-    }
+    applyServerArchive(response);
 
     const btn = document.querySelector('.btn-save');
     if(btn){
@@ -593,25 +603,36 @@ function onCloudSaveSuccess(response) {
 }
 
 function onCloudFetchSuccess(response) {
-    if (response && response.archive) {
-        monthlyArchive = response.archive;
-        localStorage.setItem('GomlaAudit_Archive', JSON.stringify(monthlyArchive));
-    }
-    renderAndSortDashboard(); renderHistorySidebar(); loadSavedInputsIfExist();
+    applyServerArchive(response);
+    renderAndSortDashboard(); renderHistorySidebar(); refreshEvaluatorHeaders(); loadSavedInputsIfExist();
     const btn = document.querySelector('.btn-refresh');
     if (btn) btn.textContent = "🔄 تحديث ومزامنة فورية لكل الأجهزة";
+}
+
+// مزامنة صامتة في الخلفية كل فترة قصيرة، عشان كل الأجهزة تفضل شايفة نفس البيانات
+// أول بأول من غير ما حد يحتاج يدوس على زرار "تحديث" يدوياً في كل مرة.
+// ملحوظة: عمداً مش بتلمس صفحة "رصد تقييم جديد" (loadSavedInputsIfExist) عشان
+// ميحصلش فقدان لأي درجات لسه بتتكتب ومحفظتش. بتحدث فقط لوحة الصدارة وصفحة الفحص.
+function backgroundSync() {
+    const script = document.createElement('script');
+    script.src = CLOUD_STORAGE_URL + "?action=get&sheet=" + encodeURIComponent(TARGET_SHEET_NAME) + "&callback=onBackgroundSyncSuccess";
+    document.body.appendChild(script);
+}
+
+function onBackgroundSyncSuccess(response) {
+    applyServerArchive(response);
+    renderAndSortDashboard();
+    renderHistorySidebar();
+    refreshEvaluatorHeaders();
 }
 
 function renderAndSortDashboard() {
     const m = document.getElementById('globalMonthSelect').value;
     const body = document.getElementById('evaluationTableBody'); if(!body) return;
     body.innerHTML = '';
-    
-    const clearedMonths = JSON.parse(localStorage.getItem('GomlaAudit_ClearedMonths') || '[]');
-    const isCleared = clearedMonths.includes(m);
 
     let list = baseEmployeesDataset.map(emp => {
-        let rec = (!isCleared && monthlyArchive[m] && monthlyArchive[m][emp.id]) ? monthlyArchive[m][emp.id] : null;
+        let rec = (monthlyArchive[m] && monthlyArchive[m][emp.id]) ? monthlyArchive[m][emp.id] : null;
         let tot = 0, count = 0;
         
         if(rec && rec.scores) {
@@ -662,12 +683,9 @@ function renderHistorySidebar() {
     const sb = document.getElementById('historySidebar'); if(!sb) return;
     sb.innerHTML = '';
 
-    const clearedMonths = JSON.parse(localStorage.getItem('GomlaAudit_ClearedMonths') || '[]');
-    const isCleared = clearedMonths.includes(m);
-
     baseEmployeesDataset.forEach(emp => {
         let div = document.createElement('div'); div.className = 'sidebar-item';
-        let has = !isCleared && monthlyArchive[m] && monthlyArchive[m][emp.id];
+        let has = monthlyArchive[m] && monthlyArchive[m][emp.id];
         let info = "—";
         if (has) {
             let tot=0, c=0;
@@ -697,8 +715,7 @@ function showDetails(id, name) {
     const m = document.getElementById('globalMonthSelect').value;
     const panel = document.getElementById('historyDetailsPanel');
 
-    const clearedMonths = JSON.parse(localStorage.getItem('GomlaAudit_ClearedMonths') || '[]');
-    if (clearedMonths.includes(m) || !monthlyArchive[m] || !monthlyArchive[m][id]) {
+    if (!monthlyArchive[m] || !monthlyArchive[m][id]) {
         panel.innerHTML = '<h3>📋 تقرير فحص درجات: ' + name + ' ('+ id +')</h3><div class="empty-state">❌ لا توجد تقييمات مسجلة لهذا الموظف في هذا الشهر.</div>'; return;
     }
     let rec = monthlyArchive[m][id];
@@ -766,24 +783,44 @@ function printCurrentActivePage() {
     }, 500);
 }
 
-function openResetMenu() { 
+function openResetMenu() {
     const m = document.getElementById('globalMonthSelect').value;
-    if(confirm(`⚠️ تأكيد إخلاء الواجهة لشهر (${m})\n\nهل أنت متأكد من مسح وإفراغ الجداول الحالية على الشاشة لهذا الشهر فقط؟`)) { 
+    if(confirm(`⚠️ تأكيد حذف بيانات شهر (${m}) نهائياً من السحابة\n\nهذا الإجراء سيحذف كل تقييمات هذا الشهر فعلياً من جوجل شيت ومن كل الأجهزة، وليس من جهازك فقط.\n\nهل أنت متأكد؟`)) {
         try {
-            let clearedMonths = JSON.parse(localStorage.getItem('GomlaAudit_ClearedMonths') || '[]');
-            if (!clearedMonths.includes(m)) {
-                clearedMonths.push(m);
-                localStorage.setItem('GomlaAudit_ClearedMonths', JSON.stringify(clearedMonths));
-            }
-            criteriaDefinition.forEach(b => b.items.forEach(item => {
-                const el = document.getElementById(item.id); if (el) el.value = 0;
-            }));
-            calculateLiveTotal(); renderAndSortDashboard(); renderHistorySidebar();
-            const panel = document.getElementById('historyDetailsPanel');
-            if(panel) { panel.innerHTML = '<div class="empty-state">💡 اضغط على اسم الموظف من القائمة الجانبية لاستعراض وفحص درجاته التفصيلية.</div>'; }
-            alert("✅ تم مسح التقرير وإفراغ الواجهة الحالية بنجاح، والأرشيف السحابي داخل جوجل شيت آمن ومحفوظ بالكامل.");
+            const btn = document.querySelector('.btn-danger');
+            if (btn) { btn.disabled = true; }
+
+            // ملحوظة مهمة: ده أصبح إجراء حقيقي بيتزامن مع السيرفر (مش إخفاء محلي زي الأول)،
+            // عشان لما تعمله يبقى نفس النتيجة ظاهرة عند كل الزملاء، مش عندك بس.
+            const formData = new URLSearchParams();
+            formData.append('action', 'clearMonth');
+            formData.append('sheet', TARGET_SHEET_NAME);
+            formData.append('month', m);
+
+            fetch(CLOUD_STORAGE_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                body: formData.toString()
+            }).then(function() {
+                const script = document.createElement('script');
+                script.src = CLOUD_STORAGE_URL + "?action=get&sheet=" + encodeURIComponent(TARGET_SHEET_NAME) + "&callback=onCloudFetchSuccess";
+                document.body.appendChild(script);
+
+                criteriaDefinition.forEach(b => b.items.forEach(item => {
+                    const el = document.getElementById(item.id); if (el) el.value = 0;
+                }));
+                calculateLiveTotal();
+                const panel = document.getElementById('historyDetailsPanel');
+                if(panel) { panel.innerHTML = '<div class="empty-state">💡 اضغط على اسم الموظف من القائمة الجانبية لاستعراض وفحص درجاته التفصيلية.</div>'; }
+                if (btn) { btn.disabled = false; }
+                alert("✅ تم حذف بيانات هذا الشهر من السحابة نهائياً، وسيظهر هذا لكل الزملاء تلقائياً.");
+            }).catch(function() {
+                if (btn) { btn.disabled = false; }
+                alert("⚠️ تعذر الاتصال بالسيرفر، لم يتم حذف بيانات الشهر. حاول تاني.");
+            });
         } catch (err) { alert("❌ حدث خطأ غير متوقع: " + err.message); }
-    } 
+    }
 }
 
 function wipeAllDataAndCloudStore() {
@@ -806,20 +843,19 @@ function wipeAllDataAndCloudStore() {
             }
 
             const formData = new URLSearchParams();
-            formData.append('action', 'save');
+            formData.append('action', 'wipeAll');
             formData.append('sheet', TARGET_SHEET_NAME);
-            formData.append('data', JSON.stringify({}));
 
             fetch(CLOUD_STORAGE_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
                 body: formData.toString()
+            }).then(function() {
+                alert("💥 تم بنجاح فرمتة المنظومة بالكامل لكل الأجهزة، وتصفير ملف جوجل شيت سحابياً للبدء بيضاء من الصفر.");
             }).catch(function() {
                 alert("⚠️ تم الفرمتة محلياً، ولكن تعذر الاتصال بالسيرفر لتصفير الجوجل شيت سحابياً.");
             });
-
-            alert("💥 تم بنجاح فرمتة المنظومة بالكامل، ومسح الذاكرة المحلية لجهازك، وتصفير ملف جوجل شيت سحابياً للبدء بيضاء من الصفر.");
         } catch (err) {
             alert("❌ حدث خطأ أثناء تنفيذ الفرمتة الشاملة: " + err.message);
         }
