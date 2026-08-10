@@ -824,42 +824,69 @@ function openResetMenu() {
 }
 
 function wipeAllDataAndCloudStore() {
-    if(confirm(`🚨🚨 تحذير قطعي ونهائي (فرمتة كاملة للمنظومة)\n\nانتبه يا فندم: هذا الإجراء سيقوم بحذف الذاكرة المؤقتة بالكامل، وتصفير الأرشيف لجميع الشهور، ومسح بيانات ملف الجوجل شيت سحابياً لتتمكن من البدء من جديد تماماً بدون أي بيانات سابقة.\n\nهل أنت متأكد وتريد الفرمتة الشاملة؟`)) {
-        try {
-            localStorage.clear();
-            monthlyArchive = {};
-
-            criteriaDefinition.forEach(b => b.items.forEach(item => {
-                const el = document.getElementById(item.id); if (el) el.value = 0;
-            }));
-            
-            calculateLiveTotal();
-            renderAndSortDashboard();
-            renderHistorySidebar();
-
-            const panel = document.getElementById('historyDetailsPanel');
-            if(panel) {
-                panel.innerHTML = '<div class="empty-state">💡 اضغط على اسم الموظف من القائمة الجانبية لاستعراض وفحص درجاته التفصيلية.</div>';
-            }
-
-            const formData = new URLSearchParams();
-            formData.append('action', 'wipeAll');
-            formData.append('sheet', TARGET_SHEET_NAME);
-
-            fetch(CLOUD_STORAGE_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-                body: formData.toString()
-            }).then(function() {
-                alert("💥 تم بنجاح فرمتة المنظومة بالكامل لكل الأجهزة، وتصفير ملف جوجل شيت سحابياً للبدء بيضاء من الصفر.");
-            }).catch(function() {
-                alert("⚠️ تم الفرمتة محلياً، ولكن تعذر الاتصال بالسيرفر لتصفير الجوجل شيت سحابياً.");
-            });
-        } catch (err) {
-            alert("❌ حدث خطأ أثناء تنفيذ الفرمتة الشاملة: " + err.message);
-        }
+    if(!confirm(`🚨🚨 تحذير قطعي ونهائي (فرمتة كاملة للمنظومة)\n\nانتبه يا فندم: هذا الإجراء سيقوم بحذف الذاكرة المؤقتة بالكامل، وتصفير الأرشيف لجميع الشهور، ومسح بيانات ملف الجوجل شيت سحابياً لتتمكن من البدء من جديد تماماً بدون أي بيانات سابقة.\n\nهل أنت متأكد وتريد الفرمتة الشاملة؟`)) {
+        return;
     }
+
+    // كلمة السر بتتفحص على السيرفر فقط (مش موجودة في كود الصفحة خالص)، فمحدش يقدر يشوفها
+    // حتى لو فتح "عرض مصدر الصفحة". من غير الباسورد الصح، السيرفر مش هينفذ أي مسح.
+    const enteredPassword = prompt("🔒 من فضلك أدخل كلمة سر الفرمتة الشاملة للتأكيد النهائي:");
+    if (enteredPassword === null || enteredPassword.trim() === "") {
+        alert("تم إلغاء العملية، لم يتم مسح أي شيء.");
+        return;
+    }
+
+    const btn = document.querySelector('.btn-dark-danger');
+    if (btn) { btn.disabled = true; btn.textContent = "⏳ جاري التحقق..."; }
+
+    const script = document.createElement('script');
+    script.src = CLOUD_STORAGE_URL +
+        "?action=wipeAll&sheet=" + encodeURIComponent(TARGET_SHEET_NAME) +
+        "&password=" + encodeURIComponent(enteredPassword) +
+        "&callback=onWipeAllResult";
+
+    script.onerror = function() {
+        if (btn) { btn.disabled = false; btn.textContent = "🚨 فرمتة ومسح الأرشيف والجوجل شيت نهائياً"; }
+        alert("⚠️ تعذر الاتصال بالسيرفر، لم يتم مسح أي شيء.");
+    };
+
+    document.body.appendChild(script);
+}
+
+function onWipeAllResult(response) {
+    const btn = document.querySelector('.btn-dark-danger');
+    if (btn) { btn.disabled = false; btn.textContent = "🚨 فرمتة ومسح الأرشيف والجوجل شيت نهائياً"; }
+
+    if (!response || response.status === "unauthorized") {
+        alert("⛔ كلمة السر غير صحيحة. لم يتم مسح أي بيانات، الأرشيف سليم بالكامل.");
+        return;
+    }
+
+    if (response.status !== "success") {
+        alert("❌ حدث خطأ غير متوقع أثناء الفرمتة. لم يتم مسح أي شيء.");
+        return;
+    }
+
+    // ميتمش مسح أي حاجة محلياً إلا بعد تأكيد نجاح العملية فعلياً على السيرفر
+    localStorage.clear();
+    monthlyArchive = {};
+    evaluatorDisplayNames = {};
+
+    criteriaDefinition.forEach(b => b.items.forEach(item => {
+        const el = document.getElementById(item.id); if (el) el.value = 0;
+    }));
+
+    calculateLiveTotal();
+    renderAndSortDashboard();
+    renderHistorySidebar();
+    refreshEvaluatorHeaders();
+
+    const panel = document.getElementById('historyDetailsPanel');
+    if (panel) {
+        panel.innerHTML = '<div class="empty-state">💡 اضغط على اسم الموظف من القائمة الجانبية لاستعراض وفحص درجاته التفصيلية.</div>';
+    }
+
+    alert("💥 تم بنجاح فرمتة المنظومة بالكامل لكل الأجهزة، وتصفير ملف جوجل شيت سحابياً للبدء بيضاء من الصفر.");
 }
 </script>
 </body>
