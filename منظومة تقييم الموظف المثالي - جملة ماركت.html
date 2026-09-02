@@ -136,8 +136,38 @@
         <button class="action-btn btn-refresh" onclick="syncDataLive()">🔄 تحديث ومزامنة فورية لكل الأجهزة</button>
         <button class="action-btn" onclick="toggleTheme()">🌓 وضع ليلي / نهاري</button>
         <button class="action-btn btn-pdf" onclick="printCurrentActivePage()">💾 حفظ التقرير PDF</button>
+        <button class="action-btn" onclick="openEmployeeManager()">👥 إدارة قائمة الموظفين</button>
+        <button class="action-btn" onclick="reopenIdentityOverlay()">👤 تغيير الهوية</button>
         <button class="action-btn btn-danger" onclick="openResetMenu()">🗑️ مسح وإخلاء واجهة التقرير الحالية</button>
         <button class="action-btn btn-dark-danger" onclick="wipeAllDataAndCloudStore()">🚨 فرمتة ومسح الأرشيف والجوجل شيت نهائياً</button>
+    </div>
+
+    <!-- شاشة تحديد الهوية: بتظهر أول مرة بس عشان نعرف نعرض لكل حد بياناته هو بس -->
+    <div id="viewerIdentityOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:var(--white); padding:30px; border-radius:12px; max-width:420px; width:90%; text-align:center;">
+            <h3 style="margin-bottom:15px; color:var(--primary);">👋 من حضرتك؟</h3>
+            <p style="margin-bottom:15px; font-size:14px; color:var(--mid);">اختار جهة التقييم الخاصة بيك عشان تشوف بياناتك.</p>
+            <select id="viewerIdentitySelect" class="month-select" style="width:100%; margin-bottom:12px;"></select>
+            <input type="password" id="viewerIdentityPassword" placeholder="رمز إضافي (إن وجد) - اختياري" style="width:100%; padding:12px; margin-bottom:12px; border:1px solid var(--input-border); border-radius:8px; background:var(--input-bg); color:var(--text-main);">
+            <button class="btn-save" onclick="confirmViewerIdentity()">دخول</button>
+        </div>
+    </div>
+
+    <!-- شاشة إدارة قائمة الموظفين: إضافة وحذف بسهولة، بتتزامن مع كل الأجهزة -->
+    <div id="employeeManagerOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:var(--white); padding:25px; border-radius:12px; max-width:520px; width:92%; max-height:85vh; overflow-y:auto;">
+            <h3 style="margin-bottom:15px; color:var(--primary); text-align:center;">👥 إدارة قائمة الموظفين</h3>
+
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <input type="text" id="newEmployeeName" placeholder="اسم الموظف الجديد" style="flex:2; padding:10px; border:1px solid var(--input-border); border-radius:8px; background:var(--input-bg); color:var(--text-main);">
+                <input type="number" id="newEmployeeId" placeholder="الكود" style="flex:1; padding:10px; border:1px solid var(--input-border); border-radius:8px; background:var(--input-bg); color:var(--text-main);">
+                <button class="action-btn btn-refresh" style="white-space:nowrap;" onclick="addEmployeeToRoster()">➕ إضافة</button>
+            </div>
+
+            <div id="employeeManagerList" style="max-height:350px; overflow-y:auto; border:1px solid var(--table-border); border-radius:8px; padding:10px;"></div>
+
+            <button class="action-btn" style="width:100%; justify-content:center; margin-top:15px;" onclick="closeEmployeeManager()">إغلاق</button>
+        </div>
     </div>
 
     <div class="header">
@@ -175,20 +205,11 @@
                 <div class="form-group">
                     <label for="employeeSelect">اسم الموظف المرشح للتقييم:</label>
                     <select id="employeeSelect" onchange="loadSavedInputsIfExist();"></select>
+                    <span id="remainingCountLabel" style="font-size:12px; color:var(--mid); font-weight:700; margin-top:4px;"></span>
                 </div>
                 <div class="form-group">
                     <label for="evaluatorTypeSelect">جهة التصويت والتقييم الحالية (9 جهات):</label>
-                    <select id="evaluatorTypeSelect" onchange="loadSavedInputsIfExist();">
-                        <option value="manager">مدير الإدارة (محمد مصطفي)</option>
-                        <option value="deputy1" selected>النائب (محمد يسري)</option>
-                        <option value="deputy2">النائب (سعد محمد)</option>
-                        <option value="tl_first">رئيس الفريق الأول</option>
-                        <option value="tl_second">رئيس الفريق الثاني</option>
-                        <option value="tl_third">رئيس الفريق الثالث</option>
-                        <option value="tl_stock">تيم ليدر مجموعة المخزون</option>
-                        <option value="tl_finance">تيم ليدر المجموعة المالية</option>
-                        <option value="tl_special">تيم ليدر الإدارات المتخصصة</option>
-                    </select>
+                    <select id="evaluatorTypeSelect" onchange="refreshEmployeeSelectByRemaining(); loadSavedInputsIfExist();"></select>
                 </div>
 
                 <div class="form-group">
@@ -299,7 +320,7 @@ const criteriaDefinition = [
 }
 ];
 
-const baseEmployeesDataset = [
+const defaultEmployeesDataset = [
     { id: 122, name: "ياسر أحمد" }, { id: 236, name: "السيد ناصر" }, { id: 942, name: "أحمد خميس" },
     { id: 3954, name: "عماد جمال" }, { id: 4795, name: "وائل علي" }, { id: 5078, name: "مصطفى عبد الحميد" },
     { id: 5328, name: "إسلام عبد العزيز" }, { id: 5483, name: "أشرف أحمد" }, { id: 5846, name: "أحمد علم الدين" },
@@ -314,6 +335,10 @@ const baseEmployeesDataset = [
 { id: 27685, name: "رحمة محمود" },
     
 ];
+
+// نسخة قابلة للتعديل من قائمة الموظفين. بتفضل زي ما هي بالظبط لحد ما حد يستخدم "إدارة قائمة
+// الموظفين" لأول مرة، ومن ساعتها القائمة المحدّثة بتتزامن من السيرفر لكل الأجهزة تلقائياً.
+let baseEmployeesDataset = defaultEmployeesDataset.slice();
 
 let monthlyArchive = {};
 let isDarkMode = false;
@@ -361,37 +386,127 @@ window.onload = function() {
     initApp();
 };
 
-function initApp() {
-    const saved = localStorage.getItem('GomlaAudit_Archive');
-    if (saved) monthlyArchive = JSON.parse(saved);
-    
-    const empSelect = document.getElementById('employeeSelect');
-    empSelect.innerHTML = '';
-  baseEmployeesDataset.forEach(e => {
-        let opt = document.createElement('option');
-        opt.value = e.id; opt.textContent = e.name + ' (' + e.id + ')';
-        empSelect.appendChild(opt);
-    });
-   const employeeFilterSelect = document.getElementById('employeeFilterSelect');
-if(employeeFilterSelect){
-    employeeFilterSelect.innerHTML = '<option value="">جميع الموظفين</option>';
-
-    baseEmployeesDataset
-    .filter(e =>
-        e.id !== 18947 &&
-        e.id !== 27685
-    )
-    .forEach(e => {
-        let opt = document.createElement('option');
-        opt.value = e.id;
-        opt.textContent = e.name + ' (' + e.id + ')';
-        employeeFilterSelect.appendChild(opt);
-    });
+// ===== نظام الهوية والخصوصية =====
+// كل مقيّم بيختار جهته مرة واحدة (بتتحفظ على جهازه بس)، وبناءً عليها بيتحدد اللي يقدر يشوفه.
+// "مدير الإدارة" و"النائب (محمد يسري)" بس عندهم كلمة سر خاصة بكل واحد فيهم لوحده (كل واحد
+// حاطط كلمته بنفسه في إعدادات المشروع، ومحدش من التاني عارف كلمة التاني). عمداً مفيش أي رسالة
+// أو مؤشر في الواجهة يقول "دي جهة محمية" — كل الجهات شكلها متطابق تماماً، فمحدش يعرف إن فيه
+// جهتين بالذات عندهم صلاحية أعلى.
+function getViewerRole() {
+    return localStorage.getItem('GomlaAudit_ViewerRole') || '';
 }
 
-      refreshEvaluatorHeaders();
+function isFullAccessViewer() {
+    if (!getViewerRole()) return true; // لسه ماختارش هوية؛ الأوفرلاي ظاهر أصلاً فمفيش أي تسريب
+    return localStorage.getItem('GomlaAudit_ViewerFullAccess') === '1';
+}
+
+function ensureViewerIdentity() {
+    if (!getViewerRole()) {
+        const overlay = document.getElementById('viewerIdentityOverlay');
+        if (overlay) overlay.style.display = 'flex';
+    }
+}
+
+function reopenIdentityOverlay() {
+    const overlay = document.getElementById('viewerIdentityOverlay');
+    if (overlay) overlay.style.display = 'flex';
+}
+
+let _pendingIdentityRole = null;
+
+function confirmViewerIdentity() {
+    const sel = document.getElementById('viewerIdentitySelect');
+    if (!sel || !sel.value) return;
+    const role = sel.value;
+    const codeInput = document.getElementById('viewerIdentityPassword');
+    const code = codeInput ? codeInput.value : '';
+
+    // بنبعت الاختيار والرمز (لو موجود) للسيرفر دايماً بنفس الطريقة أياً كانت الجهة المختارة،
+    // عشان مفيش أي فرق ملحوظ في سلوك الواجهة بين جهة وجهة. السيرفر هو اللي يقرر بصمت
+    // هل الرمز ده يفتح صلاحية كاملة ولا لأ.
+    _pendingIdentityRole = role;
+    const script = document.createElement('script');
+    script.src = CLOUD_STORAGE_URL + "?action=verifyIdentity&role=" + encodeURIComponent(role) +
+        "&password=" + encodeURIComponent(code) + "&callback=onIdentityVerifyResult";
+    script.onerror = function() {
+        // حتى لو السيرفر مش متاح، بنسيبه يدخل بصلاحية عادية عشان محدش يتعطل عن الشغل
+        setViewerIdentity(role, false);
+    };
+    document.body.appendChild(script);
+}
+
+function onIdentityVerifyResult(response) {
+    const fullAccess = !!(response && response.fullAccess === true);
+    if (_pendingIdentityRole) {
+        setViewerIdentity(_pendingIdentityRole, fullAccess);
+    }
+    _pendingIdentityRole = null;
+}
+
+function setViewerIdentity(role, fullAccess) {
+    localStorage.setItem('GomlaAudit_ViewerRole', role);
+    localStorage.setItem('GomlaAudit_ViewerFullAccess', fullAccess ? '1' : '0');
+    const overlay = document.getElementById('viewerIdentityOverlay');
+    if (overlay) overlay.style.display = 'none';
+    renderAndSortDashboard();
+    renderHistorySidebar();
+}
+// ===== نهاية نظام الهوية =====
+
+function initApp() {
+    const saved = localStorage.getItem('GomlaAudit_Archive');
+    if (saved) {
+        monthlyArchive = JSON.parse(saved);
+        if (monthlyArchive._meta && Array.isArray(monthlyArchive._meta.employees) && monthlyArchive._meta.employees.length > 0) {
+            baseEmployeesDataset = monthlyArchive._meta.employees;
+        }
+    }
+
+    // بناء قائمة "جهة التصويت" ديناميكياً من evaluatorRoles (بدل تكرارها يدوياً في الـ HTML)
+    const evaluatorTypeSelect = document.getElementById('evaluatorTypeSelect');
+    if (evaluatorTypeSelect) {
+        evaluatorTypeSelect.innerHTML = '';
+        evaluatorRoles.forEach(role => {
+            let opt = document.createElement('option');
+            opt.value = role.key; opt.textContent = role.label;
+            if (role.key === 'deputy1') opt.selected = true;
+            evaluatorTypeSelect.appendChild(opt);
+        });
+    }
+
+    const viewerIdentitySelect = document.getElementById('viewerIdentitySelect');
+    if (viewerIdentitySelect) {
+        viewerIdentitySelect.innerHTML = '';
+        evaluatorRoles.forEach(role => {
+            let opt = document.createElement('option');
+            opt.value = role.key; opt.textContent = role.label;
+            viewerIdentitySelect.appendChild(opt);
+        });
+    }
+
+    const employeeFilterSelect = document.getElementById('employeeFilterSelect');
+    if(employeeFilterSelect){
+        employeeFilterSelect.innerHTML = '<option value="">جميع الموظفين</option>';
+
+        baseEmployeesDataset
+        .filter(e =>
+            e.id !== 18947 &&
+            e.id !== 27685
+        )
+        .forEach(e => {
+            let opt = document.createElement('option');
+            opt.value = e.id;
+            opt.textContent = e.name + ' (' + e.id + ')';
+            employeeFilterSelect.appendChild(opt);
+        });
+    }
+
+    refreshEvaluatorHeaders();
     buildCriteriaForm();
+    refreshEmployeeSelectByRemaining();
     loadSavedInputsIfExist();
+    ensureViewerIdentity();
     syncDataLive(false);
 
     // مزامنة تلقائية كل 15 ثانية عشان كل الأجهزة تتحدث لبعض من غير تدخل يدوي
@@ -451,6 +566,59 @@ function loadSavedInputsIfExist() {
         }
     }
     calculateLiveTotal();
+}
+
+// بتبني قائمة "اسم الموظف المرشح للتقييم" بحيث تعرض بس الموظفين اللي لسه ماتقيموش من نفس
+// جهة التقييم المختارة في هذا الشهر، عشان يبان للمُقيّم عدد الباقيين بوضوح.
+function refreshEmployeeSelectByRemaining() {
+    const m = document.getElementById('globalMonthSelect').value;
+    const roleKey = document.getElementById('evaluatorTypeSelect').value;
+    const empSelect = document.getElementById('employeeSelect');
+    const label = document.getElementById('remainingCountLabel');
+    if (!empSelect) return;
+
+    const previouslySelected = empSelect.value;
+
+    const remaining = baseEmployeesDataset.filter(e => {
+        const rec = monthlyArchive[m] && monthlyArchive[m][e.id];
+        const alreadyScored = rec && rec.scores && rec.scores[roleKey] > 0;
+        return !alreadyScored;
+    });
+
+    empSelect.innerHTML = '';
+
+    if (remaining.length === 0) {
+        let opt = document.createElement('option');
+        opt.value = ''; opt.textContent = '✅ تم تقييم كل الموظفين';
+        empSelect.appendChild(opt);
+    } else {
+        remaining.forEach(e => {
+            let opt = document.createElement('option');
+            opt.value = e.id; opt.textContent = e.name + ' (' + e.id + ')';
+            empSelect.appendChild(opt);
+        });
+
+        if (remaining.some(e => String(e.id) === String(previouslySelected))) {
+            empSelect.value = previouslySelected;
+        }
+    }
+
+    if (label) {
+        label.textContent = 'الباقي تقييمهم: ' + remaining.length + ' من ' + baseEmployeesDataset.length;
+    }
+}
+
+// بتبني القائمة كاملة (كل الموظفين من غير فلترة) — مستخدمة بس وقت "تعديل تقييم قديم"
+// عشان تقدر تلاقي وتختار موظف سبق تقييمه حتى لو كان مستبعد من قائمة "الباقي تقييمهم"
+function populateEmployeeSelectFull() {
+    const empSelect = document.getElementById('employeeSelect');
+    if (!empSelect) return;
+    empSelect.innerHTML = '';
+    baseEmployeesDataset.forEach(e => {
+        let opt = document.createElement('option');
+        opt.value = e.id; opt.textContent = e.name + ' (' + e.id + ')';
+        empSelect.appendChild(opt);
+    });
 }
 
 function saveEvaluationScore() {
@@ -565,6 +733,12 @@ function applyServerArchive(response) {
             evaluatorDisplayNames = monthlyArchive._meta.evaluatorNames;
             localStorage.setItem('GomlaAudit_EvaluatorNames', JSON.stringify(evaluatorDisplayNames));
         }
+
+        // لو أي حد استخدم "إدارة قائمة الموظفين" قبل كده، السيرفر بيبقى عنده نسخة محدّثة
+        // من القائمة، فبنستخدمها هنا بدل القائمة الافتراضية الثابتة في الكود
+        if (monthlyArchive._meta && Array.isArray(monthlyArchive._meta.employees) && monthlyArchive._meta.employees.length > 0) {
+            baseEmployeesDataset = monthlyArchive._meta.employees;
+        }
     }
 }
 
@@ -584,6 +758,7 @@ function onCloudSaveSuccess(response) {
     renderAndSortDashboard();
     refreshEvaluatorHeaders();
     renderHistorySidebar();
+    refreshEmployeeSelectByRemaining();
     switchTab('leaderboard');
 
     alert("تم الحفظ");
@@ -604,7 +779,9 @@ function onCloudSaveSuccess(response) {
 
 function onCloudFetchSuccess(response) {
     applyServerArchive(response);
-    renderAndSortDashboard(); renderHistorySidebar(); refreshEvaluatorHeaders(); loadSavedInputsIfExist();
+    renderAndSortDashboard(); renderHistorySidebar(); refreshEvaluatorHeaders();
+    refreshEmployeeSelectByRemaining();
+    loadSavedInputsIfExist();
     const btn = document.querySelector('.btn-refresh');
     if (btn) btn.textContent = "🔄 تحديث ومزامنة فورية لكل الأجهزة";
 }
@@ -631,7 +808,17 @@ function renderAndSortDashboard() {
     const body = document.getElementById('evaluationTableBody'); if(!body) return;
     body.innerHTML = '';
 
-    let list = baseEmployeesDataset.map(emp => {
+    const viewerRole = getViewerRole();
+    const isFullAccess = isFullAccessViewer();
+
+    let list = baseEmployeesDataset
+        .filter(emp => {
+            if (isFullAccess) return true;
+            // المُقيّم اللي مش مدير/نائب يشوف بس الموظفين اللي هو شخصياً قيّمهم
+            const rec = monthlyArchive[m] && monthlyArchive[m][emp.id];
+            return rec && rec.scores && rec.scores[viewerRole] > 0;
+        })
+        .map(emp => {
         let rec = (monthlyArchive[m] && monthlyArchive[m][emp.id]) ? monthlyArchive[m][emp.id] : null;
         let tot = 0, count = 0;
         
@@ -666,9 +853,14 @@ function renderAndSortDashboard() {
                       '<td>' + item.emp.id + '</td>' +
                       '<td class="emp-name">' + item.emp.name + '</td>';
         
-        // بناء قيم الخلايا للـ 9 جهات ديناميكياً
+        // بناء قيم الخلايا للـ 9 جهات ديناميكياً — لو مش صاحب صلاحية كاملة، بيتقفل عمود أي جهة تقييم غيره
         evaluatorRoles.forEach(role => {
-            let val = (r && r.scores && r.scores[role.key]) ? r.scores[role.key] : '-';
+            let val;
+            if (!isFullAccess && role.key !== viewerRole) {
+                val = '🔒';
+            } else {
+                val = (r && r.scores && r.scores[role.key]) ? r.scores[role.key] : '-';
+            }
             rowHtml += '<td>' + val + '</td>';
         });
 
@@ -685,7 +877,16 @@ function renderHistorySidebar() {
     const sb = document.getElementById('historySidebar'); if(!sb) return;
     sb.innerHTML = '';
 
-    baseEmployeesDataset.forEach(emp => {
+    const viewerRole = getViewerRole();
+    const isFullAccess = isFullAccessViewer();
+
+    baseEmployeesDataset
+    .filter(emp => {
+        if (isFullAccess) return true;
+        const rec = monthlyArchive[m] && monthlyArchive[m][emp.id];
+        return rec && rec.scores && rec.scores[viewerRole] > 0;
+    })
+    .forEach(emp => {
         let div = document.createElement('div'); div.className = 'sidebar-item';
         let has = monthlyArchive[m] && monthlyArchive[m][emp.id];
         let info = "—";
@@ -724,10 +925,16 @@ function showDetails(id, name) {
     let htmlContent = '<h3>📋 تقرير فحص درجات: <span style="color:var(--primary)">' + name + ' (' + id + ')</span></h3>';
     htmlContent += '<div style="margin-top:15px; margin-bottom:15px;"><label style="font-weight:700;">🔍 اختر جهة التقييم لعرض بنودها التفصيلية:</label>';
     htmlContent += '<select id="historyRoleSelect" class="month-select" style="width:100%; margin-top:8px;" onchange="renderHistoryDetailedCriteria('+id+')">';
-    
-    evaluatorRoles.forEach(role => {
+
+    const isFullAccess = isFullAccessViewer();
+    const viewerRole = getViewerRole();
+
+    // لو مش صاحب صلاحية كاملة، القائمة بتقفل على جهة التقييم بتاعته هو بس، فميقدرش يشوف درجات زمايله
+    const visibleRoles = isFullAccess ? evaluatorRoles : evaluatorRoles.filter(role => role.key === viewerRole);
+
+    visibleRoles.forEach(role => {
         let score = (rec.scores && rec.scores[role.key]) ? rec.scores[role.key] : 0;
-        let selectedAttr = (role.key === 'deputy1') ? 'selected' : '';
+        let selectedAttr = (isFullAccess ? role.key === 'deputy1' : true) ? 'selected' : '';
         htmlContent += '<option value="' + role.key + '" ' + selectedAttr + '>' + role.label + ' — [' + score + ' درجة]</option>';
     });
     
@@ -741,6 +948,10 @@ function showDetails(id, name) {
 // عشان يقدر يصحح أي درجة غلط بسهولة. الحفظ بعد كده هيستبدل بس هذا التقييم تحديداً، ومفيش
 // أي تأثير على باقي الموظفين أو باقي الجهات أو باقي الشهور.
 function editThisEvaluation(empId, roleKey) {
+    // نبني القائمة كاملة مؤقتاً هنا عشان تقدر تلاقي الموظف حتى لو كان مستبعد من قائمة
+    // "الباقي تقييمهم" لأنه سبق تقييمه فعلاً
+    populateEmployeeSelectFull();
+
     const employeeSelect = document.getElementById('employeeSelect');
     const evaluatorTypeSelect = document.getElementById('evaluatorTypeSelect');
     if (employeeSelect) employeeSelect.value = empId;
@@ -779,6 +990,7 @@ function renderHistoryDetailedCriteria(empId) {
 function handleMonthChange() {
     const txt = document.getElementById('globalMonthSelect').options[document.getElementById('globalMonthSelect').selectedIndex].text;
     document.getElementById('evaluateBoxTitle').textContent = 'إدخال وبناء درجات المحاور لشهر (' + txt + ')';
+    refreshEmployeeSelectByRemaining();
     loadSavedInputsIfExist(); syncDataLive(false);
 }
 
@@ -887,6 +1099,104 @@ function onWipeAllResult(response) {
     }
 
     alert("💥 تم بنجاح فرمتة المنظومة بالكامل لكل الأجهزة، وتصفير ملف جوجل شيت سحابياً للبدء بيضاء من الصفر.");
+}
+
+// ===== إدارة قائمة الموظفين (إضافة / حذف) =====
+// الحذف هنا بيشيل الموظف من القائمة النشطة (الدروب داون + لوحة الصدارة + الفحص) بس،
+// وأي تقييمات سابقة اتسجلت له في الأرشيف بتفضل محفوظة زي ما هي بالكامل على السيرفر، مبتتمسحش خالص.
+
+function openEmployeeManager() {
+    renderEmployeeManagerList();
+    const overlay = document.getElementById('employeeManagerOverlay');
+    if (overlay) overlay.style.display = 'flex';
+}
+
+function closeEmployeeManager() {
+    const overlay = document.getElementById('employeeManagerOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function renderEmployeeManagerList() {
+    const list = document.getElementById('employeeManagerList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    baseEmployeesDataset.forEach(emp => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px dashed var(--table-border); font-size:14px;';
+        row.innerHTML = '<span>' + emp.name + ' <strong style="color:var(--mid);">(' + emp.id + ')</strong></span>' +
+            '<button class="action-btn btn-danger" style="padding:4px 10px; font-size:12px;" onclick="removeEmployeeFromRoster(' + emp.id + ')">حذف</button>';
+        list.appendChild(row);
+    });
+}
+
+function addEmployeeToRoster() {
+    const nameInput = document.getElementById('newEmployeeName');
+    const idInput = document.getElementById('newEmployeeId');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const id = idInput ? parseInt(idInput.value) : NaN;
+
+    if (!name || isNaN(id)) {
+        alert("من فضلك أدخل اسم الموظف وكوده (رقم) بشكل صحيح.");
+        return;
+    }
+    if (baseEmployeesDataset.some(e => String(e.id) === String(id))) {
+        alert("⚠️ الكود ده مستخدم بالفعل لموظف موجود، اختار كود مختلف.");
+        return;
+    }
+
+    baseEmployeesDataset = baseEmployeesDataset.concat([{ id: id, name: name }]);
+    if (nameInput) nameInput.value = '';
+    if (idInput) idInput.value = '';
+
+    renderEmployeeManagerList();
+    persistEmployeesToServer();
+}
+
+function removeEmployeeFromRoster(id) {
+    if (!confirm("هل تريد إزالة هذا الموظف من قائمة التقييم النشطة؟\n\nملحوظة: أي تقييمات سابقة له ستبقى محفوظة بالكامل على السحابة، فقط لن يظهر في القوائم للتقييمات الجديدة.")) {
+        return;
+    }
+    baseEmployeesDataset = baseEmployeesDataset.filter(e => String(e.id) !== String(id));
+    renderEmployeeManagerList();
+    persistEmployeesToServer();
+}
+
+function persistEmployeesToServer() {
+    // نحدّث كل الدروب داون على طول من غير ما ننتظر رد السيرفر عشان الإحساس يكون سريع
+    const employeeFilterSelect = document.getElementById('employeeFilterSelect');
+    if (employeeFilterSelect) {
+        employeeFilterSelect.innerHTML = '<option value="">جميع الموظفين</option>';
+        baseEmployeesDataset
+        .filter(e => e.id !== 18947 && e.id !== 27685)
+        .forEach(e => {
+            let opt = document.createElement('option');
+            opt.value = e.id; opt.textContent = e.name + ' (' + e.id + ')';
+            employeeFilterSelect.appendChild(opt);
+        });
+    }
+    refreshEmployeeSelectByRemaining();
+    renderAndSortDashboard();
+    renderHistorySidebar();
+
+    const script = document.createElement('script');
+    script.src = CLOUD_STORAGE_URL +
+        "?action=updateEmployees&sheet=" + encodeURIComponent(TARGET_SHEET_NAME) +
+        "&employees=" + encodeURIComponent(JSON.stringify(baseEmployeesDataset)) +
+        "&callback=onEmployeesUpdateResult";
+    script.onerror = function() {
+        alert("⚠️ تعذر الاتصال بالسيرفر، التعديل محفوظ عندك مؤقتاً بس لسه مش متزامن مع باقي الأجهزة. جرب زرار 'تحديث ومزامنة' بعد شوية.");
+    };
+    document.body.appendChild(script);
+}
+
+function onEmployeesUpdateResult(response) {
+    if (response && response.status === 'success') {
+        applyServerArchive(response);
+        renderAndSortDashboard();
+        renderHistorySidebar();
+        refreshEmployeeSelectByRemaining();
+    }
 }
 </script>
 </body>
