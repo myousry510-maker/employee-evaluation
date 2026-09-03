@@ -422,9 +422,20 @@ function confirmViewerIdentity() {
     const codeInput = document.getElementById('viewerIdentityPassword');
     const code = codeInput ? codeInput.value : '';
 
+    // لو كتب رمز وهو مختار "مدير الإدارة" أو "النائب"، ممكن يكون أول مرة يسجّل رمزه الخاص،
+    // فبنطلب تأكيده مرة كمان قبل ما نبعته للسيرفر عشان لو غلط في الكتابة ميقفلش بيه غلط.
+    if (code && (role === 'manager' || role === 'deputy1')) {
+        const confirmCode = prompt('🔁 اكتب نفس الرمز تاني للتأكيد:');
+        if (confirmCode === null || confirmCode !== code) {
+            // التأكيد مش مطابق أو اتلغى؛ ندخل بصلاحية عادية من غير ما نسجل أو نغيّر أي حاجة
+            setViewerIdentity(role, false);
+            return;
+        }
+    }
+
     // بنبعت الاختيار والرمز (لو موجود) للسيرفر دايماً بنفس الطريقة أياً كانت الجهة المختارة،
     // عشان مفيش أي فرق ملحوظ في سلوك الواجهة بين جهة وجهة. السيرفر هو اللي يقرر بصمت
-    // هل الرمز ده يفتح صلاحية كاملة ولا لأ.
+    // هل الرمز ده يسجّل لأول مرة، أو يتطابق مع رمز مسجّل قبل كده، أو يفتح صلاحية عادية بس.
     _pendingIdentityRole = role;
     const script = document.createElement('script');
     script.src = CLOUD_STORAGE_URL + "?action=verifyIdentity&role=" + encodeURIComponent(role) +
