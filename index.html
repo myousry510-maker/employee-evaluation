@@ -850,7 +850,19 @@ function renderAndSortDashboard() {
         return { emp, rec, avg: count > 0 ? (tot/count).toFixed(2) : "0.00", count };
     });
 
-    list.sort((a,b) => parseFloat(b.avg) - parseFloat(a.avg));
+    // ترتيب الفوز الجديد:
+    // 1) الأولوية لعدد المقيّمين (الأصوات) الأعلى
+    // 2) لو اتساووا في العدد، الأولوية للمتوسط الأعلى
+    // 3) لو اتساووا في العدد والمتوسط مع بعض، تقييم مدير الإدارة هو الفيصل النهائي
+    //    (تقييمه لسه مستبعد من حساب المتوسط والعدد زي الأول بالظبط، ومش بيتفعّل إلا في حالة
+    //    التعادل الكامل دي بس)
+    list.sort((a,b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        if (parseFloat(b.avg) !== parseFloat(a.avg)) return parseFloat(b.avg) - parseFloat(a.avg);
+        const aManager = (a.rec && a.rec.scores && a.rec.scores.manager) || 0;
+        const bManager = (b.rec && b.rec.scores && b.rec.scores.manager) || 0;
+        return bManager - aManager;
+    });
 
     const committeeSize = evaluatorRoles.filter(r => r.key !== 'manager').length;
 
