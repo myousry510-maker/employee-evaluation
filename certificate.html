@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>شهادة تقدير الموظف المثالي | جملة ماركت</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+    * { box-sizing:border-box; margin:0; padding:0; font-family:'Cairo',sans-serif; }
+    body { background:#f3f1ec; padding:24px; color:#1C1C1C; }
+    .wrap { max-width:1100px; margin:0 auto; }
+    .top-nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px; }
+    .top-nav a { color:#FF6B00; font-weight:700; text-decoration:none; font-size:14px; }
+    .panel { background:#fff; border-radius:14px; padding:22px; margin-bottom:24px; box-shadow:0 4px 18px rgba(0,0,0,0.06); }
+    .panel h3 { color:#FF6B00; margin-bottom:14px; font-size:17px; }
+    .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; margin-bottom:14px; }
+    .field { display:flex; flex-direction:column; gap:6px; flex:1; min-width:180px; }
+    .field label { font-size:13px; font-weight:700; color:#555; }
+    .field select, .field input { padding:10px; border:1px solid #ccc; border-radius:8px; font-size:14px; font-family:inherit; }
+    .readout { background:#FFF4EC; border:1px dashed #FF6B00; border-radius:10px; padding:14px; font-weight:700; font-size:14px; margin-bottom:14px; }
+    .readout .muted { color:#888; font-weight:600; font-size:12px; }
+    .btn { padding:12px 22px; border:none; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; }
+    .btn-primary { background:#FF6B00; color:#fff; }
+    .btn-secondary { background:#2980B9; color:#fff; }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+
+    /* ===== الشهادة ===== */
+    .cert-outer { padding:14px; background:linear-gradient(135deg,#caa544,#f3e3a8,#caa544); border-radius:26px; width:1000px; max-width:100%; margin:0 auto; }
+    .cert-card { background:#FBF6EE; border-radius:18px; overflow:hidden; display:flex; min-height:640px; }
+    .cert-left { flex:1.55; padding:36px 40px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .cert-logo img { width:110px; }
+    .cert-title { color:#0b1f3f; font-size:38px; font-weight:900; margin-top:6px; }
+    .cert-subtitle { color:#FF6B00; font-weight:700; font-size:15px; }
+    .cert-pill { background:#0b1f3f; color:#fff; padding:8px 18px; border-radius:20px; font-size:13px; font-weight:700; margin-top:8px; }
+    .cert-intro { font-size:14px; color:#333; margin-top:6px; }
+    .cert-name-row { display:flex; align-items:center; gap:14px; margin-top:6px; }
+    .cert-name-row .laurel { font-size:26px; opacity:0.8; }
+    .cert-name-row .laurel.flip { transform:scaleX(-1); }
+    .cert-name { color:#0b1f3f; font-size:42px; font-weight:900; }
+    .cert-badge-pill { background:#caa544; color:#fff; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:700; margin-top:10px; }
+    .cert-subtitle2 { color:#0b1f3f; font-size:20px; font-weight:900; margin-top:6px; }
+    .cert-month2 { color:#FF6B00; font-weight:700; font-size:14px; }
+    .cert-paragraph { font-size:13px; color:#444; line-height:1.9; margin-top:12px; max-width:380px; }
+    .cert-wish { color:#FF6B00; font-weight:700; font-size:13px; margin-top:8px; }
+    .cert-footer-left { margin-top:auto; padding-top:14px; font-size:12px; color:#555; font-weight:700; line-height:1.6; }
+
+    .cert-right { flex:1; background:linear-gradient(160deg,#0b1f3f,#173a72); display:flex; flex-direction:column; align-items:center; padding:34px 20px 24px; position:relative; }
+    .cert-photo-frame { width:230px; height:230px; border-radius:50%; border:9px solid #caa544; overflow:hidden; background:#33456b; box-shadow:0 6px 20px rgba(0,0,0,0.35); }
+    .cert-photo-frame img { width:100%; height:100%; object-fit:cover; display:block; }
+    .cert-ring-badge { margin-top:-38px; width:150px; height:150px; border-radius:50%; background:radial-gradient(circle at 50% 35%, #123163, #0b1f3f); border:6px solid #caa544; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; text-align:center; z-index:2; }
+    .cert-ring-badge .star { color:#f3d873; font-size:18px; margin-bottom:2px; }
+    .cert-ring-badge .badge-title { font-weight:900; font-size:14px; line-height:1.3; }
+    .cert-ring-badge .badge-month { font-size:11px; margin-top:3px; color:#f3e3a8; font-weight:700; }
+    .cert-footer-right { margin-top:auto; text-align:center; color:#fff; }
+    .cert-footer-right .brand { color:#f3d873; font-weight:900; font-size:16px; letter-spacing:1px; }
+    .cert-footer-right div:last-child { font-size:12px; margin-top:4px; }
+
+    .locked { max-width:520px; margin:80px auto; background:#fff; padding:30px; border-radius:14px; text-align:center; box-shadow:0 4px 18px rgba(0,0,0,0.08); }
+    .locked a { color:#FF6B00; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="top-nav">
+        <a href="index.html">⬅ الرجوع للوحة الرئيسية</a>
+        <a href="winners.html">🏆 أرشيف الفائزين</a>
+    </div>
+
+    <div id="lockedMessage" class="locked" style="display:none;">
+        🔒 هذه الصفحة لأصحاب الصلاحية الكاملة فقط.<br><br>
+        افتح <a href="index.html">اللوحة الرئيسية</a> وسجّل هويتك أولاً، وبعدين ارجع هنا.
+    </div>
+
+    <div id="mainContent" style="display:none;">
+        <div class="panel">
+            <h3>📅 اختيار الشهر</h3>
+            <div class="row">
+                <div class="field">
+                    <label>الشهر</label>
+                    <select id="monthSelect"></select>
+                </div>
+                <div class="field">
+                    <label>السنة</label>
+                    <select id="yearSelect"></select>
+                </div>
+                <div class="field">
+                    <label>صورة الفائز</label>
+                    <input type="file" id="photoInput" accept="image/*">
+                </div>
+            </div>
+            <div class="readout" id="winnerReadout">جاري تحميل بيانات الشهر...</div>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="downloadCertificate()">💾 تحميل الشهادة كصورة</button>
+                <button class="btn btn-secondary" onclick="saveCertificateToArchive()">☁️ حفظ في الأرشيف</button>
+            </div>
+        </div>
+
+        <div class="cert-outer">
+            <div class="cert-card" id="certCard">
+                <div class="cert-left">
+                    <div class="cert-logo"><img src="gomla_logo.png" alt="Gomla Market"></div>
+                    <div class="cert-title">الموظف المثالي</div>
+                    <div class="cert-subtitle">— شهر <span id="certMonthTop">—</span> —</div>
+                    <div class="cert-pill">تتقدم إدارة المراجعة الداخلية</div>
+                    <div class="cert-intro">بخالص التهنئة والتقدير إلى</div>
+                    <div class="cert-name-row">
+                        <span class="laurel">🌿</span>
+                        <div class="cert-name" id="certName">—</div>
+                        <span class="laurel flip">🌿</span>
+                    </div>
+                    <div class="cert-badge-pill">لحصوله على لقب</div>
+                    <div class="cert-subtitle2">الموظف المثالي</div>
+                    <div class="cert-month2">عن شهر <span id="certMonthMid">—</span></div>
+                    <p class="cert-paragraph">تقديرًا لأدائه المتميز، والتزامه العالي، وجهوده الملحوظة في تطوير العمل وحرصه الدائم على الجودة والتميز.</p>
+                    <div class="cert-wish">متمنين له دوام التوفيق والنجاح</div>
+                    <div class="cert-footer-left">
+                        <div>إدارة المراجعة الداخلية</div>
+                        <div>جملة ماركت</div>
+                    </div>
+                </div>
+                <div class="cert-right">
+                    <div class="cert-photo-frame"><img id="certPhoto" src="" alt=""></div>
+                    <div class="cert-ring-badge">
+                        <div class="star">⭐</div>
+                        <div class="badge-title">الموظف المثالي</div>
+                        <div class="badge-month" id="certMonthBadge">—</div>
+                    </div>
+                    <div class="cert-footer-right">
+                        <div class="brand">GOMLA MARKET</div>
+                        <div>إدارة المراجعة الداخلية</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+let currentArchive = {};
+let currentWinner = null;
+let currentPhotoDataUrl = "";
+
+function init() {
+    if (!isFullAccessViewer()) {
+        document.getElementById('lockedMessage').style.display = 'block';
+        return;
+    }
+    document.getElementById('mainContent').style.display = 'block';
+
+    const monthSelect = document.getElementById('monthSelect');
+    arabicMonths.forEach((m, i) => {
+        let opt = document.createElement('option');
+        opt.value = m; opt.textContent = m;
+        monthSelect.appendChild(opt);
+    });
+
+    const yearSelect = document.getElementById('yearSelect');
+    const nowYear = new Date().getFullYear();
+    for (let y = nowYear - 1; y <= nowYear + 1; y++) {
+        let opt = document.createElement('option');
+        opt.value = y; opt.textContent = y;
+        if (y === nowYear) opt.selected = true;
+        yearSelect.appendChild(opt);
+    }
+    // الشهر الحالي افتراضياً
+    monthSelect.value = arabicMonths[new Date().getMonth()];
+
+    monthSelect.onchange = refreshWinner;
+    yearSelect.onchange = refreshWinner;
+    document.getElementById('photoInput').onchange = onPhotoChosen;
+
+    fetchArchive(function(archive) {
+        currentArchive = archive;
+        refreshWinner();
+    });
+}
+
+function currentMonthKey() {
+    return document.getElementById('monthSelect').value + ' ' + document.getElementById('yearSelect').value;
+}
+
+function refreshWinner() {
+    const monthKey = currentMonthKey();
+    currentWinner = computeMonthWinner(currentArchive, monthKey);
+    const readout = document.getElementById('winnerReadout');
+
+    if (!currentWinner) {
+        readout.innerHTML = '❌ لا يوجد فائز محسوب لشهر <b>' + monthKey + '</b> بعد (مفيش تقييمات كافية).';
+        document.getElementById('certName').textContent = '—';
+        document.getElementById('certMonthTop').textContent = monthKey;
+        document.getElementById('certMonthMid').textContent = monthKey;
+        document.getElementById('certMonthBadge').textContent = monthKey;
+        return;
+    }
+
+    readout.innerHTML = '🏆 الفائز المحسوب: <b>' + currentWinner.emp.name + '</b> (' + currentWinner.emp.id + ')' +
+        '<br><span class="muted">متوسط التقييم: ' + currentWinner.avg + ' — عدد المقيّمين: ' + currentWinner.count + '</span>';
+
+    document.getElementById('certName').textContent = currentWinner.emp.name;
+    document.getElementById('certMonthTop').textContent = monthKey;
+    document.getElementById('certMonthMid').textContent = monthKey;
+    document.getElementById('certMonthBadge').textContent = monthKey;
+
+    // لو محفوظ صورة قبل كده لنفس الفائز ونفس الشهر، اعرضها تلقائياً
+    const savedPhoto = currentArchive._meta && currentArchive._meta.winnerPhotos && currentArchive._meta.winnerPhotos[monthKey];
+    if (savedPhoto) {
+        currentPhotoDataUrl = savedPhoto;
+        document.getElementById('certPhoto').src = savedPhoto;
+    } else {
+        currentPhotoDataUrl = "";
+        document.getElementById('certPhoto').src = "";
+    }
+}
+
+function onPhotoChosen(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        currentPhotoDataUrl = ev.target.result;
+        document.getElementById('certPhoto').src = currentPhotoDataUrl;
+    };
+    reader.readAsDataURL(file);
+}
+
+function downloadCertificate() {
+    if (!currentWinner) { alert('من فضلك اختار شهر عنده فائز محسوب أولاً.'); return; }
+    html2canvas(document.getElementById('certCard'), { scale: 2, useCORS: true }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'شهادة الموظف المثالي - ' + currentMonthKey() + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    });
+}
+
+function saveCertificateToArchive() {
+    if (!currentWinner) { alert('من فضلك اختار شهر عنده فائز محسوب أولاً.'); return; }
+    if (!currentPhotoDataUrl) { alert('من فضلك ارفع صورة الفائز أولاً.'); return; }
+
+    const monthKey = currentMonthKey();
+    const formData = new URLSearchParams();
+    formData.append('action', 'saveWinnerPhoto');
+    formData.append('sheet', TARGET_SHEET_NAME);
+    formData.append('month', monthKey);
+    formData.append('employeeId', currentWinner.emp.id);
+    formData.append('photo', currentPhotoDataUrl);
+
+    fetch(CLOUD_STORAGE_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: formData.toString()
+    }).then(() => {
+        alert('✅ تم حفظ الشهادة في الأرشيف. هتلاقيها في صفحة "أرشيف الفائزين".');
+    }).catch(() => {
+        alert('⚠️ تعذر الاتصال بالسيرفر، حاول تاني.');
+    });
+}
+
+init();
+</script>
+</body>
+</html>

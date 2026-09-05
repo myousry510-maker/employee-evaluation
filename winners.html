@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أرشيف الفائزين | جملة ماركت</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+    * { box-sizing:border-box; margin:0; padding:0; font-family:'Cairo',sans-serif; }
+    body { background:#f3f1ec; padding:24px; color:#1C1C1C; }
+    .wrap { max-width:1100px; margin:0 auto; }
+    .top-nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px; }
+    .top-nav a { color:#FF6B00; font-weight:700; text-decoration:none; font-size:14px; }
+    .panel { background:#fff; border-radius:14px; padding:22px; margin-bottom:24px; box-shadow:0 4px 18px rgba(0,0,0,0.06); }
+    .panel h3 { color:#FF6B00; margin-bottom:14px; font-size:17px; }
+    .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; }
+    .field { display:flex; flex-direction:column; gap:6px; flex:1; min-width:180px; }
+    .field label { font-size:13px; font-weight:700; color:#555; }
+    .field select { padding:10px; border:1px solid #ccc; border-radius:8px; font-size:14px; font-family:inherit; }
+
+    .result-grid { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; }
+    .cert-mini { width:320px; flex-shrink:0; }
+    .cert-mini-frame { width:100%; aspect-ratio:1/1; border-radius:50%; border:8px solid #caa544; overflow:hidden; background:#0b1f3f; margin:0 auto 14px; }
+    .cert-mini-frame img { width:100%; height:100%; object-fit:cover; display:block; }
+    .cert-mini-name { text-align:center; font-size:20px; font-weight:900; color:#0b1f3f; }
+    .cert-mini-month { text-align:center; color:#FF6B00; font-weight:700; font-size:13px; margin-top:4px; }
+    .no-photo { text-align:center; color:#888; font-size:13px; padding:20px; }
+
+    .details { flex:1; min-width:280px; }
+    .stat-row { display:flex; gap:14px; margin-bottom:16px; flex-wrap:wrap; }
+    .stat-box { background:#FFF4EC; border:1px dashed #FF6B00; border-radius:10px; padding:14px 20px; text-align:center; }
+    .stat-box .num { font-size:24px; font-weight:900; color:#FF6B00; }
+    .stat-box .lbl { font-size:12px; color:#666; font-weight:700; margin-top:2px; }
+
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { background:#1C1C1C; color:#fff; padding:10px 6px; font-size:12px; }
+    td { padding:10px 6px; border-bottom:1px solid #eee; text-align:center; }
+    .empty-state { text-align:center; color:#888; padding:60px 0; font-weight:700; }
+
+    .locked { max-width:520px; margin:80px auto; background:#fff; padding:30px; border-radius:14px; text-align:center; box-shadow:0 4px 18px rgba(0,0,0,0.08); }
+    .locked a { color:#FF6B00; font-weight:700; }
+
+    .month-list { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+    .month-chip { background:#f0f0f0; border-radius:20px; padding:6px 14px; font-size:12px; font-weight:700; cursor:pointer; }
+    .month-chip.has-winner { background:#FF6B00; color:#fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="top-nav">
+        <a href="index.html">⬅ الرجوع للوحة الرئيسية</a>
+        <a href="certificate.html">🏅 إعداد شهادة جديدة</a>
+    </div>
+
+    <div id="lockedMessage" class="locked" style="display:none;">
+        🔒 هذه الصفحة لأصحاب الصلاحية الكاملة فقط.<br><br>
+        افتح <a href="index.html">اللوحة الرئيسية</a> وسجّل هويتك أولاً، وبعدين ارجع هنا.
+    </div>
+
+    <div id="mainContent" style="display:none;">
+        <div class="panel">
+            <h3>🏆 أرشيف الفائزين — اختر الشهر</h3>
+            <div class="row">
+                <div class="field">
+                    <label>الشهر</label>
+                    <select id="monthSelect"></select>
+                </div>
+                <div class="field">
+                    <label>السنة</label>
+                    <select id="yearSelect"></select>
+                </div>
+            </div>
+            <div class="month-list" id="monthList"></div>
+        </div>
+
+        <div class="panel" id="resultPanel">
+            <div class="empty-state">اختار شهر وسنة من فوق لعرض الفائز وتفاصيله</div>
+        </div>
+    </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+let currentArchive = {};
+
+function init() {
+    if (!isFullAccessViewer()) {
+        document.getElementById('lockedMessage').style.display = 'block';
+        return;
+    }
+    document.getElementById('mainContent').style.display = 'block';
+
+    const monthSelect = document.getElementById('monthSelect');
+    arabicMonths.forEach(m => {
+        let opt = document.createElement('option');
+        opt.value = m; opt.textContent = m;
+        monthSelect.appendChild(opt);
+    });
+
+    const yearSelect = document.getElementById('yearSelect');
+    const nowYear = new Date().getFullYear();
+    for (let y = nowYear - 1; y <= nowYear + 1; y++) {
+        let opt = document.createElement('option');
+        opt.value = y; opt.textContent = y;
+        if (y === nowYear) opt.selected = true;
+        yearSelect.appendChild(opt);
+    }
+    monthSelect.value = arabicMonths[new Date().getMonth()];
+
+    monthSelect.onchange = () => { renderResult(); renderMonthChips(); };
+    yearSelect.onchange = () => { renderResult(); renderMonthChips(); };
+
+    fetchArchive(function(archive) {
+        currentArchive = archive;
+        renderResult();
+        renderMonthChips();
+    });
+}
+
+function currentMonthKey() {
+    return document.getElementById('monthSelect').value + ' ' + document.getElementById('yearSelect').value;
+}
+
+function renderMonthChips() {
+    const year = document.getElementById('yearSelect').value;
+    const list = document.getElementById('monthList');
+    list.innerHTML = '';
+    arabicMonths.forEach(m => {
+        const key = m + ' ' + year;
+        const hasWinner = !!computeMonthWinner(currentArchive, key);
+        const chip = document.createElement('div');
+        chip.className = 'month-chip' + (hasWinner ? ' has-winner' : '');
+        chip.textContent = m + (hasWinner ? ' 🏆' : '');
+        chip.onclick = () => {
+            document.getElementById('monthSelect').value = m;
+            renderResult();
+        };
+        list.appendChild(chip);
+    });
+}
+
+function renderResult() {
+    const monthKey = currentMonthKey();
+    const winner = computeMonthWinner(currentArchive, monthKey);
+    const panel = document.getElementById('resultPanel');
+
+    if (!winner) {
+        panel.innerHTML = '<div class="empty-state">❌ مفيش فائز محسوب لشهر <b>' + monthKey + '</b> — إما لسه ماتقيمش حد، أو محدش حقق الحد الأدنى من عدد المقيّمين.</div>';
+        return;
+    }
+
+    const savedPhoto = currentArchive._meta && currentArchive._meta.winnerPhotos && currentArchive._meta.winnerPhotos[monthKey];
+    const photoBlock = savedPhoto
+        ? '<div class="cert-mini-frame"><img src="' + savedPhoto + '"></div>'
+        : '<div class="cert-mini-frame no-photo" style="display:flex; align-items:center; justify-content:center;">لسه محدش رفع صورة<br>الفائز لهذا الشهر</div>';
+
+    let rowsHtml = '';
+    evaluatorRoles.forEach(role => {
+        const score = (winner.rec && winner.rec.scores && winner.rec.scores[role.key]) ? winner.rec.scores[role.key] : '-';
+        rowsHtml += '<tr><td style="text-align:right; font-weight:700;">' + role.label + '</td><td>' + score + '</td></tr>';
+    });
+
+    panel.innerHTML =
+        '<h3>🏆 فائز شهر ' + monthKey + '</h3>' +
+        '<div class="result-grid" style="margin-top:16px;">' +
+            '<div class="cert-mini">' +
+                photoBlock +
+                '<div class="cert-mini-name">' + winner.emp.name + '</div>' +
+                '<div class="cert-mini-month">كود الموظف: ' + winner.emp.id + '</div>' +
+            '</div>' +
+            '<div class="details">' +
+                '<div class="stat-row">' +
+                    '<div class="stat-box"><div class="num">' + winner.avg + '</div><div class="lbl">متوسط التقييم</div></div>' +
+                    '<div class="stat-box"><div class="num">' + winner.count + '</div><div class="lbl">عدد المقيّمين الفعليين</div></div>' +
+                '</div>' +
+                '<table><thead><tr><th>جهة التقييم</th><th>الدرجة</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
+                (savedPhoto ? '' : '<div style="margin-top:14px;"><a href="certificate.html" style="color:#FF6B00; font-weight:700;">🏅 اذهب لصفحة الشهادات لرفع صورة الفائز</a></div>') +
+            '</div>' +
+        '</div>';
+}
+
+init();
+</script>
+</body>
+</html>

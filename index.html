@@ -424,7 +424,7 @@ function confirmViewerIdentity() {
 
     // لو كتب رمز وهو مختار "مدير الإدارة" أو "النائب"، ممكن يكون أول مرة يسجّل رمزه الخاص،
     // فبنطلب تأكيده مرة كمان قبل ما نبعته للسيرفر عشان لو غلط في الكتابة ميقفلش بيه غلط.
-    if (code && (role === 'manager' || role === 'deputy1')) {
+    if (code && (role === 'manager' || role === 'deputy1' || role === 'deputy2')) {
         const confirmCode = prompt('🔁 اكتب نفس الرمز تاني للتأكيد:');
         if (confirmCode === null || confirmCode !== code) {
             // التأكيد مش مطابق أو اتلغى؛ ندخل بصلاحية عادية من غير ما نسجل أو نغيّر أي حاجة
@@ -850,19 +850,7 @@ function renderAndSortDashboard() {
         return { emp, rec, avg: count > 0 ? (tot/count).toFixed(2) : "0.00", count };
     });
 
-    // ترتيب الفوز الجديد:
-    // 1) الأولوية لعدد المقيّمين (الأصوات) الأعلى
-    // 2) لو اتساووا في العدد، الأولوية للمتوسط الأعلى
-    // 3) لو اتساووا في العدد والمتوسط مع بعض، تقييم مدير الإدارة هو الفيصل النهائي
-    //    (تقييمه لسه مستبعد من حساب المتوسط والعدد زي الأول بالظبط، ومش بيتفعّل إلا في حالة
-    //    التعادل الكامل دي بس)
-    list.sort((a,b) => {
-        if (b.count !== a.count) return b.count - a.count;
-        if (parseFloat(b.avg) !== parseFloat(a.avg)) return parseFloat(b.avg) - parseFloat(a.avg);
-        const aManager = (a.rec && a.rec.scores && a.rec.scores.manager) || 0;
-        const bManager = (b.rec && b.rec.scores && b.rec.scores.manager) || 0;
-        return bManager - aManager;
-    });
+    list.sort((a,b) => parseFloat(b.avg) - parseFloat(a.avg));
 
     const committeeSize = evaluatorRoles.filter(r => r.key !== 'manager').length;
 
