@@ -1434,6 +1434,22 @@ function certMonthKey() {
     return document.getElementById('certMonthSelect').value + ' ' + document.getElementById('certYearSelect').value;
 }
 
+// بتجيب صورة الفائز المحفوظة كنص base64 آمن (مش كرابط خارجي)، عشان تصدير الشهادة كصورة
+// (html2canvas) يشتغل من غير أي مشاكل قيود المتصفح على الصور من مصدر خارجي (CORS)
+function fetchWinnerPhotoSafely(monthKey) {
+    const cbName = '__certPhotoFetch_' + Date.now();
+    window[cbName] = function(response) {
+        delete window[cbName];
+        if (response && response.photo) {
+            certCurrentPhotoDataUrl = response.photo;
+            document.getElementById('certPhoto').src = response.photo;
+        }
+    };
+    const script = document.createElement('script');
+    script.src = CLOUD_STORAGE_URL + "?action=getWinnerPhoto&month=" + encodeURIComponent(monthKey) + "&callback=" + cbName;
+    document.body.appendChild(script);
+}
+
 function refreshCertWinner() {
     const monthKey = certMonthKey();
     certCurrentWinner = computeMonthWinner(monthKey);
@@ -1457,8 +1473,11 @@ function refreshCertWinner() {
 
     const savedPhoto = monthlyArchive._meta && monthlyArchive._meta.winnerPhotos && monthlyArchive._meta.winnerPhotos[monthKey];
     if (savedPhoto) {
-        certCurrentPhotoDataUrl = savedPhoto;
-        document.getElementById('certPhoto').src = savedPhoto;
+        // ميتحطش رابط جوجل درايڤ مباشرة في الصورة (ده كان بيسبب خطأ عند "تحميل كصورة" بسبب
+        // قيود المتصفح على الصور من مصدر خارجي). بدل كده، نجيبها كنص آمن (base64) من السيرفر.
+        document.getElementById('certPhoto').src = "";
+        certCurrentPhotoDataUrl = "";
+        fetchWinnerPhotoSafely(monthKey);
     } else {
         certCurrentPhotoDataUrl = "";
         document.getElementById('certPhoto').src = "";
