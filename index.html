@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منظومة تقييم الموظف المثالي | جملة ماركت</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --primary: #FF6B00; 
@@ -127,6 +128,62 @@
             body:not(.print-active-tab-only) #page-history { display: none !important; }
             body:not(.print-active-tab-only) #page-leaderboard { display: block !important; }
         }
+        /* ===== تبويب شهادة الفائز وأرشيف الفائزين ===== */
+        .cert-controls-row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px; }
+        .cert-field { display:flex; flex-direction:column; gap:6px; flex:1; min-width:170px; }
+        .cert-field label { font-size:13px; font-weight:700; color:var(--mid); }
+        .cert-field select, .cert-field input { padding:10px; border:1px solid var(--input-border); border-radius:8px; font-size:14px; font-family:inherit; background:var(--input-bg); color:var(--text-main); }
+        .cert-readout { background:var(--bg-light); border:1px dashed var(--primary); border-radius:10px; padding:14px; font-weight:700; font-size:14px; margin-bottom:14px; }
+        .cert-readout .muted { color:var(--mid); font-weight:600; font-size:12px; }
+        .cert-btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+
+        .cert-outer { padding:14px; background:linear-gradient(135deg,#caa544,#f3e3a8,#caa544); border-radius:26px; width:1000px; max-width:100%; margin:20px auto 0; }
+        .cert-card { background:#FBF6EE; border-radius:18px; overflow:hidden; display:flex; min-height:640px; }
+        .cert-left { flex:1.55; padding:36px 40px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; }
+        .cert-logo img { width:110px; }
+        .cert-title { color:#0b1f3f; font-size:38px; font-weight:900; margin-top:6px; }
+        .cert-subtitle { color:#FF6B00; font-weight:700; font-size:15px; }
+        .cert-pill { background:#0b1f3f; color:#fff; padding:8px 18px; border-radius:20px; font-size:13px; font-weight:700; margin-top:8px; }
+        .cert-intro { font-size:14px; color:#333; margin-top:6px; }
+        .cert-name-row { display:flex; align-items:center; gap:14px; margin-top:6px; }
+        .cert-name-row .laurel { font-size:26px; opacity:0.8; }
+        .cert-name-row .laurel.flip { transform:scaleX(-1); }
+        .cert-name { color:#0b1f3f; font-size:42px; font-weight:900; }
+        .cert-badge-pill { background:#caa544; color:#fff; padding:6px 20px; border-radius:20px; font-size:13px; font-weight:700; margin-top:10px; }
+        .cert-subtitle2 { color:#0b1f3f; font-size:20px; font-weight:900; margin-top:6px; }
+        .cert-month2 { color:#FF6B00; font-weight:700; font-size:14px; }
+        .cert-paragraph { font-size:13px; color:#444; line-height:1.9; margin-top:12px; max-width:380px; }
+        .cert-wish { color:#FF6B00; font-weight:700; font-size:13px; margin-top:8px; }
+        .cert-footer-left { margin-top:auto; padding-top:14px; font-size:12px; color:#555; font-weight:700; line-height:1.6; }
+        .cert-right { flex:1; background:linear-gradient(160deg,#0b1f3f,#173a72); display:flex; flex-direction:column; align-items:center; padding:34px 20px 24px; position:relative; }
+        .cert-photo-frame { width:230px; height:230px; border-radius:50%; border:9px solid #caa544; overflow:hidden; background:#33456b; box-shadow:0 6px 20px rgba(0,0,0,0.35); }
+        .cert-photo-frame img { width:100%; height:100%; object-fit:cover; display:block; }
+        .cert-ring-badge { margin-top:-38px; width:150px; height:150px; border-radius:50%; background:radial-gradient(circle at 50% 35%, #123163, #0b1f3f); border:6px solid #caa544; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; text-align:center; z-index:2; }
+        .cert-ring-badge .star { color:#f3d873; font-size:18px; margin-bottom:2px; }
+        .cert-ring-badge .badge-title { font-weight:900; font-size:14px; line-height:1.3; }
+        .cert-ring-badge .badge-month { font-size:11px; margin-top:3px; color:#f3e3a8; font-weight:700; }
+        .cert-footer-right { margin-top:auto; text-align:center; color:#fff; }
+        .cert-footer-right .brand { color:#f3d873; font-weight:900; font-size:16px; letter-spacing:1px; }
+        .cert-footer-right div:last-child { font-size:12px; margin-top:4px; }
+
+        .winners-result-grid { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; margin-top:16px; }
+        .winners-mini { width:300px; flex-shrink:0; }
+        .winners-mini-frame { width:100%; aspect-ratio:1/1; border-radius:50%; border:8px solid #caa544; overflow:hidden; background:#0b1f3f; margin:0 auto 14px; display:flex; align-items:center; justify-content:center; color:#ddd; font-size:12px; text-align:center; }
+        .winners-mini-frame img { width:100%; height:100%; object-fit:cover; display:block; }
+        .winners-mini-name { text-align:center; font-size:20px; font-weight:900; color:#0b1f3f; }
+        .winners-mini-sub { text-align:center; color:var(--primary); font-weight:700; font-size:13px; margin-top:4px; }
+        .winners-details { flex:1; min-width:280px; }
+        .winners-stat-row { display:flex; gap:14px; margin-bottom:16px; flex-wrap:wrap; }
+        .winners-stat-box { background:var(--bg-light); border:1px dashed var(--primary); border-radius:10px; padding:14px 20px; text-align:center; }
+        .winners-stat-box .num { font-size:24px; font-weight:900; color:var(--primary); }
+        .winners-stat-box .lbl { font-size:12px; color:var(--mid); font-weight:700; margin-top:2px; }
+        .winners-month-list { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+        .winners-month-chip { background:#f0f0f0; border-radius:20px; padding:6px 14px; font-size:12px; font-weight:700; cursor:pointer; }
+        .winners-month-chip.has-winner { background:var(--primary); color:#fff; }
+        [data-theme="dark"] .winners-month-chip { background:#333; color:#ddd; }
+
+        .access-locked { max-width:520px; margin:60px auto; text-align:center; padding:20px; }
+        .access-locked a { color:var(--primary); font-weight:700; }
     </style>
 </head>
 <body>
@@ -196,6 +253,8 @@
         <button id="tab-btn-evaluate" class="tab-btn active" onclick="switchTab('evaluate')">✍️ رصد تقييم جديد</button>
         <button id="tab-btn-leaderboard" class="tab-btn" onclick="switchTab('leaderboard')">🏆 لوحة الصدارة والفائزين</button>
         <button id="tab-btn-history" class="tab-btn" onclick="switchTab('history')">🔍 استرجاع وفحص التقييمات التفصيلية</button>
+        <button id="tab-btn-certificate" class="tab-btn" onclick="switchTab('certificate')">🏅 شهادة الفائز</button>
+        <button id="tab-btn-winners" class="tab-btn" onclick="switchTab('winners')">📜 أرشيف الفائزين</button>
     </div>
 
     <div id="page-evaluate" class="page active">
@@ -265,6 +324,95 @@
             <div class="details-panel" id="historyDetailsPanel">
                 <div class="empty-state">💡 اضغط على اسم الموظف من القائمة الجانبية لاستعراض وفحص درجاته التفصيلية.</div>
             </div>
+        </div>
+    </div>
+
+    <div id="page-certificate" class="page">
+        <div id="certificateLocked" class="access-locked" style="display:none;">
+            🔒 هذا التبويب لأصحاب الصلاحية الكاملة فقط.<br><br>
+            دوس "👤 تغيير الهوية" وسجّل هويتك أولاً.
+        </div>
+        <div id="certificateContent" style="display:none;">
+            <div class="table-title">🏅 إعداد شهادة تقدير الفائز</div>
+            <div class="cert-controls-row" style="margin-top:15px;">
+                <div class="cert-field">
+                    <label>الشهر</label>
+                    <select id="certMonthSelect"></select>
+                </div>
+                <div class="cert-field">
+                    <label>السنة</label>
+                    <select id="certYearSelect"></select>
+                </div>
+                <div class="cert-field">
+                    <label>صورة الفائز</label>
+                    <input type="file" id="certPhotoInput" accept="image/*">
+                </div>
+            </div>
+            <div class="cert-readout" id="certReadout">جاري تحميل بيانات الشهر...</div>
+            <div class="cert-btn-row">
+                <button class="action-btn btn-refresh" onclick="downloadCertificate()">💾 تحميل الشهادة كصورة</button>
+                <button class="action-btn" style="background:#2980B9; color:#fff; border-color:#2980B9;" onclick="saveCertificateToArchive(event)">☁️ حفظ في الأرشيف</button>
+            </div>
+
+            <div class="cert-outer">
+                <div class="cert-card" id="certCard">
+                    <div class="cert-left">
+                        <div class="cert-logo"><img src="gomla_logo.png" alt="Gomla Market"></div>
+                        <div class="cert-title">الموظف المثالي</div>
+                        <div class="cert-subtitle">— شهر <span id="certMonthTop">—</span> —</div>
+                        <div class="cert-pill">تتقدم إدارة المراجعة الداخلية</div>
+                        <div class="cert-intro">بخالص التهنئة والتقدير إلى</div>
+                        <div class="cert-name-row">
+                            <span class="laurel">🌿</span>
+                            <div class="cert-name" id="certName">—</div>
+                            <span class="laurel flip">🌿</span>
+                        </div>
+                        <div class="cert-badge-pill">لحصوله على لقب</div>
+                        <div class="cert-subtitle2">الموظف المثالي</div>
+                        <div class="cert-month2">عن شهر <span id="certMonthMid">—</span></div>
+                        <p class="cert-paragraph">تقديرًا لأدائه المتميز، والتزامه العالي، وجهوده الملحوظة في تطوير العمل وحرصه الدائم على الجودة والتميز.</p>
+                        <div class="cert-wish">متمنين له دوام التوفيق والنجاح</div>
+                        <div class="cert-footer-left">
+                            <div>إدارة المراجعة الداخلية</div>
+                            <div>جملة ماركت</div>
+                        </div>
+                    </div>
+                    <div class="cert-right">
+                        <div class="cert-photo-frame"><img id="certPhoto" src="" alt=""></div>
+                        <div class="cert-ring-badge">
+                            <div class="star">⭐</div>
+                            <div class="badge-title">الموظف المثالي</div>
+                            <div class="badge-month" id="certMonthBadge">—</div>
+                        </div>
+                        <div class="cert-footer-right">
+                            <div class="brand">GOMLA MARKET</div>
+                            <div>إدارة المراجعة الداخلية</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-winners" class="page">
+        <div id="winnersLocked" class="access-locked" style="display:none;">
+            🔒 هذا التبويب لأصحاب الصلاحية الكاملة فقط.<br><br>
+            دوس "👤 تغيير الهوية" وسجّل هويتك أولاً.
+        </div>
+        <div id="winnersContent" style="display:none;">
+            <div class="table-title">📜 أرشيف الفائزين</div>
+            <div class="cert-controls-row" style="margin-top:15px;">
+                <div class="cert-field">
+                    <label>الشهر</label>
+                    <select id="winMonthSelect"></select>
+                </div>
+                <div class="cert-field">
+                    <label>السنة</label>
+                    <select id="winYearSelect"></select>
+                </div>
+            </div>
+            <div class="winners-month-list" id="winMonthList"></div>
+            <div id="winnersResultPanel" style="margin-top:20px;"></div>
         </div>
     </div>
 </div>
@@ -1012,6 +1160,8 @@ function switchTab(id) {
     const targetPage = document.getElementById('page-' + id);
     if (targetBtn && targetPage) { targetBtn.classList.add('active'); targetPage.classList.add('active'); }
     if(id === 'leaderboard' || id === 'history') { syncDataLive(false); }
+    if(id === 'certificate') { initCertificateTab(); }
+    if(id === 'winners') { initWinnersTab(); }
 }
 
 function toggleTheme() { isDarkMode = !isDarkMode; document.documentElement.setAttribute('data-theme', isDarkMode?'dark':'light'); }
@@ -1208,6 +1358,281 @@ function onEmployeesUpdateResult(response) {
         renderHistorySidebar();
         refreshEmployeeSelectByRemaining();
     }
+}
+
+// ===== منطق تبويب "شهادة الفائز" و"أرشيف الفائزين" =====
+// بيستخدموا نفس البيانات (monthlyArchive) ونفس قواعد الترتيب المستخدمة في لوحة الصدارة بالظبط.
+
+const arabicMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+let certCurrentWinner = null;
+let certCurrentPhotoDataUrl = "";
+
+// نفس منطق الترتيب الموجود في renderAndSortDashboard بالظبط (عدد المقيّمين، ثم المتوسط، ثم تقييم مدير الإدارة كفيصل)
+function computeMonthWinner(monthKey) {
+    const monthData = monthlyArchive[monthKey] || {};
+    let list = baseEmployeesDataset.map(emp => {
+        const rec = monthData[emp.id] || null;
+        let tot = 0, count = 0;
+        if (rec && rec.scores) {
+            evaluatorRoles.forEach(r => {
+                if (r.key === 'manager') return;
+                if (rec.scores[r.key] !== undefined && rec.scores[r.key] > 0) {
+                    tot += rec.scores[r.key];
+                    count++;
+                }
+            });
+        }
+        return { emp, rec, avg: count > 0 ? (tot / count).toFixed(2) : "0.00", count };
+    });
+
+    list.sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        if (parseFloat(b.avg) !== parseFloat(a.avg)) return parseFloat(b.avg) - parseFloat(a.avg);
+        const aManager = (a.rec && a.rec.scores && a.rec.scores.manager) || 0;
+        const bManager = (b.rec && b.rec.scores && b.rec.scores.manager) || 0;
+        return bManager - aManager;
+    });
+
+    if (list.length === 0 || list[0].count === 0) return null;
+    return list[0];
+}
+
+function populateYearSelect(select) {
+    select.innerHTML = '';
+    const nowYear = new Date().getFullYear();
+    for (let y = nowYear - 1; y <= nowYear + 1; y++) {
+        let opt = document.createElement('option');
+        opt.value = y; opt.textContent = y;
+        if (y === nowYear) opt.selected = true;
+        select.appendChild(opt);
+    }
+}
+
+// ----- تبويب الشهادة -----
+function initCertificateTab() {
+    if (!isFullAccessViewer()) {
+        document.getElementById('certificateLocked').style.display = 'block';
+        document.getElementById('certificateContent').style.display = 'none';
+        return;
+    }
+    document.getElementById('certificateLocked').style.display = 'none';
+    document.getElementById('certificateContent').style.display = 'block';
+
+    const monthSelect = document.getElementById('certMonthSelect');
+    if (!monthSelect.options.length) {
+        arabicMonths.forEach(m => { let o = document.createElement('option'); o.value = m; o.textContent = m; monthSelect.appendChild(o); });
+        monthSelect.value = arabicMonths[new Date().getMonth()];
+        populateYearSelect(document.getElementById('certYearSelect'));
+        monthSelect.onchange = refreshCertWinner;
+        document.getElementById('certYearSelect').onchange = refreshCertWinner;
+        document.getElementById('certPhotoInput').onchange = onCertPhotoChosen;
+    }
+    refreshCertWinner();
+}
+
+function certMonthKey() {
+    return document.getElementById('certMonthSelect').value + ' ' + document.getElementById('certYearSelect').value;
+}
+
+function refreshCertWinner() {
+    const monthKey = certMonthKey();
+    certCurrentWinner = computeMonthWinner(monthKey);
+    const readout = document.getElementById('certReadout');
+
+    document.getElementById('certMonthTop').textContent = monthKey;
+    document.getElementById('certMonthMid').textContent = monthKey;
+    document.getElementById('certMonthBadge').textContent = monthKey;
+
+    if (!certCurrentWinner) {
+        readout.innerHTML = '❌ لا يوجد فائز محسوب لشهر <b>' + monthKey + '</b> بعد.';
+        document.getElementById('certName').textContent = '—';
+        certCurrentPhotoDataUrl = "";
+        document.getElementById('certPhoto').src = "";
+        return;
+    }
+
+    readout.innerHTML = '🏆 الفائز المحسوب: <b>' + certCurrentWinner.emp.name + '</b> (' + certCurrentWinner.emp.id + ')' +
+        '<br><span class="muted">متوسط التقييم: ' + certCurrentWinner.avg + ' — عدد المقيّمين: ' + certCurrentWinner.count + '</span>';
+    document.getElementById('certName').textContent = certCurrentWinner.emp.name;
+
+    const savedPhoto = monthlyArchive._meta && monthlyArchive._meta.winnerPhotos && monthlyArchive._meta.winnerPhotos[monthKey];
+    if (savedPhoto) {
+        certCurrentPhotoDataUrl = savedPhoto;
+        document.getElementById('certPhoto').src = savedPhoto;
+    } else {
+        certCurrentPhotoDataUrl = "";
+        document.getElementById('certPhoto').src = "";
+    }
+}
+
+function onCertPhotoChosen(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        certCurrentPhotoDataUrl = ev.target.result;
+        document.getElementById('certPhoto').src = certCurrentPhotoDataUrl;
+    };
+    reader.readAsDataURL(file);
+}
+
+function downloadCertificate() {
+    if (!certCurrentWinner) { alert('من فضلك اختار شهر عنده فائز محسوب أولاً.'); return; }
+
+    // بنفتح النافذة فوراً (قبل ما ننتظر رسم الصورة) عشان متصفحات الموبايل ما تمنعهاش
+    // باعتبارها "نافذة منبثقة"، لأنها لازم تتفتح كاستجابة مباشرة لضغطة المستخدم.
+    const newWin = window.open('', '_blank');
+
+    html2canvas(document.getElementById('certCard'), { scale: 2, useCORS: true }).then(canvas => {
+        const dataUrl = canvas.toDataURL('image/png');
+
+        if (newWin && !newWin.closed) {
+            newWin.document.write(
+                '<html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>شهادة الفائز - ' + certMonthKey() + '</title></head>' +
+                '<body style="margin:0; background:#222; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; font-family:sans-serif;">' +
+                '<img src="' + dataUrl + '" style="max-width:100%; height:auto;">' +
+                '<p style="color:#fff; text-align:center; padding:14px; font-size:15px;">📌 اضغط ضغطة مطوّلة على الصورة واختر "حفظ الصورة" لتحميلها على جهازك (أو كليك يمين "حفظ الصورة باسم" على الكمبيوتر)</p>' +
+                '</body></html>'
+            );
+        } else {
+            // لو المتصفح منع فتح نافذة جديدة، نرجع لطريقة التحميل المباشر كبديل
+            const link = document.createElement('a');
+            link.download = 'شهادة الموظف المثالي - ' + certMonthKey() + '.png';
+            link.href = dataUrl;
+            link.click();
+        }
+    }).catch(() => {
+        if (newWin) newWin.close();
+        alert('⚠️ حصل خطأ أثناء تجهيز صورة الشهادة، حاول تاني.');
+    });
+}
+
+function saveCertificateToArchive(evt) {
+    if (!certCurrentWinner) { alert('من فضلك اختار شهر عنده فائز محسوب أولاً.'); return; }
+    if (!certCurrentPhotoDataUrl) { alert('من فضلك ارفع صورة الفائز أولاً.'); return; }
+
+    const monthKey = certMonthKey();
+    const formData = new URLSearchParams();
+    formData.append('action', 'saveWinnerPhoto');
+    formData.append('sheet', TARGET_SHEET_NAME);
+    formData.append('month', monthKey);
+    formData.append('employeeId', certCurrentWinner.emp.id);
+    formData.append('photo', certCurrentPhotoDataUrl);
+
+    const btn = evt ? evt.target : null;
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري الحفظ والتأكد...'; }
+
+    fetch(CLOUD_STORAGE_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: formData.toString()
+    }).then(() => {
+        // بما إن الإرسال بالطريقة دي معندوش رد نقدر نقرأه، بنتأكد فعلياً عن طريق إعادة
+        // جلب الأرشيف من السيرفر والتحقق إن الصورة اتسجلت فعلاً قبل ما نقول "تم الحفظ"
+        const script = document.createElement('script');
+        const cbName = '__certSaveCheck_' + Date.now();
+        window[cbName] = function(response) {
+            delete window[cbName];
+            if (btn) { btn.disabled = false; btn.textContent = '☁️ حفظ في الأرشيف'; }
+
+            if (response && response.archive) {
+                applyServerArchive(response);
+                const savedPhoto = monthlyArchive._meta && monthlyArchive._meta.winnerPhotos && monthlyArchive._meta.winnerPhotos[monthKey];
+                if (savedPhoto) {
+                    alert('✅ تم التأكد من الحفظ فعلياً. هتلاقيها في تبويب "أرشيف الفائزين".');
+                } else {
+                    alert('⚠️ الصورة لم تُحفظ فعلياً على السيرفر. الأغلب إن Apps Script محتاج إذن الوصول لـ Google Drive لأول مرة — راجع الخطوات اللي بعتهالك لحل المشكلة دي.');
+                }
+            } else {
+                alert('⚠️ تعذر التأكد من نجاح الحفظ، تأكد من الاتصال وحاول تاني.');
+            }
+            renderAndSortDashboard();
+        };
+        script.src = CLOUD_STORAGE_URL + "?action=get&sheet=" + encodeURIComponent(TARGET_SHEET_NAME) + "&callback=" + cbName;
+        document.body.appendChild(script);
+    }).catch(() => {
+        if (btn) { btn.disabled = false; btn.textContent = '☁️ حفظ في الأرشيف'; }
+        alert('⚠️ تعذر الاتصال بالسيرفر، حاول تاني.');
+    });
+}
+
+// ----- تبويب أرشيف الفائزين -----
+function initWinnersTab() {
+    if (!isFullAccessViewer()) {
+        document.getElementById('winnersLocked').style.display = 'block';
+        document.getElementById('winnersContent').style.display = 'none';
+        return;
+    }
+    document.getElementById('winnersLocked').style.display = 'none';
+    document.getElementById('winnersContent').style.display = 'block';
+
+    const monthSelect = document.getElementById('winMonthSelect');
+    if (!monthSelect.options.length) {
+        arabicMonths.forEach(m => { let o = document.createElement('option'); o.value = m; o.textContent = m; monthSelect.appendChild(o); });
+        monthSelect.value = arabicMonths[new Date().getMonth()];
+        populateYearSelect(document.getElementById('winYearSelect'));
+        monthSelect.onchange = () => { renderWinnersResult(); renderWinnersMonthChips(); };
+        document.getElementById('winYearSelect').onchange = () => { renderWinnersResult(); renderWinnersMonthChips(); };
+    }
+    renderWinnersResult();
+    renderWinnersMonthChips();
+}
+
+function winMonthKey() {
+    return document.getElementById('winMonthSelect').value + ' ' + document.getElementById('winYearSelect').value;
+}
+
+function renderWinnersMonthChips() {
+    const year = document.getElementById('winYearSelect').value;
+    const list = document.getElementById('winMonthList');
+    list.innerHTML = '';
+    arabicMonths.forEach(m => {
+        const key = m + ' ' + year;
+        const hasWinner = !!computeMonthWinner(key);
+        const chip = document.createElement('div');
+        chip.className = 'winners-month-chip' + (hasWinner ? ' has-winner' : '');
+        chip.textContent = m + (hasWinner ? ' 🏆' : '');
+        chip.onclick = () => { document.getElementById('winMonthSelect').value = m; renderWinnersResult(); };
+        list.appendChild(chip);
+    });
+}
+
+function renderWinnersResult() {
+    const monthKey = winMonthKey();
+    const winner = computeMonthWinner(monthKey);
+    const panel = document.getElementById('winnersResultPanel');
+
+    if (!winner) {
+        panel.innerHTML = '<div class="empty-state">❌ مفيش فائز محسوب لشهر <b>' + monthKey + '</b>.</div>';
+        return;
+    }
+
+    const savedPhoto = monthlyArchive._meta && monthlyArchive._meta.winnerPhotos && monthlyArchive._meta.winnerPhotos[monthKey];
+    const photoBlock = savedPhoto ? '<img src="' + savedPhoto + '">' : 'لسه محدش رفع صورة<br>الفائز لهذا الشهر';
+
+    let rowsHtml = '';
+    evaluatorRoles.forEach(role => {
+        const score = (winner.rec && winner.rec.scores && winner.rec.scores[role.key]) ? winner.rec.scores[role.key] : '-';
+        rowsHtml += '<tr><td style="text-align:right; font-weight:700;">' + role.label + '</td><td>' + score + '</td></tr>';
+    });
+
+    panel.innerHTML =
+        '<div class="table-title" style="font-size:17px;">🏆 فائز شهر ' + monthKey + '</div>' +
+        '<div class="winners-result-grid">' +
+            '<div class="winners-mini">' +
+                '<div class="winners-mini-frame">' + photoBlock + '</div>' +
+                '<div class="winners-mini-name">' + winner.emp.name + '</div>' +
+                '<div class="winners-mini-sub">كود الموظف: ' + winner.emp.id + '</div>' +
+            '</div>' +
+            '<div class="winners-details">' +
+                '<div class="winners-stat-row">' +
+                    '<div class="winners-stat-box"><div class="num">' + winner.avg + '</div><div class="lbl">متوسط التقييم</div></div>' +
+                    '<div class="winners-stat-box"><div class="num">' + winner.count + '</div><div class="lbl">عدد المقيّمين الفعليين</div></div>' +
+                '</div>' +
+                '<table><thead><tr><th>جهة التقييم</th><th>الدرجة</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
+                (savedPhoto ? '' : '<div style="margin-top:14px;"><a href="#" onclick="switchTab(\'certificate\'); return false;" style="color:var(--primary); font-weight:700;">🏅 اذهب لتبويب الشهادات لرفع صورة الفائز</a></div>') +
+            '</div>' +
+        '</div>';
 }
 </script>
 </body>
