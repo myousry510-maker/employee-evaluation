@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منظومة تقييم الموظف المثالي | جملة ماركت</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --primary: #FF6B00; 
@@ -127,6 +126,17 @@
             body:not(.print-active-tab-only) #page-evaluate, 
             body:not(.print-active-tab-only) #page-history { display: none !important; }
             body:not(.print-active-tab-only) #page-leaderboard { display: block !important; }
+
+            body.print-certificate-only .control-bar, body.print-certificate-only .tabs,
+            body.print-certificate-only .month-selector-bar, body.print-certificate-only .header,
+            body.print-certificate-only #page-certificate .cert-controls-row,
+            body.print-certificate-only #page-certificate .cert-readout,
+            body.print-certificate-only #page-certificate .cert-btn-row,
+            body.print-certificate-only #page-certificate .table-title { display: none !important; }
+            body.print-certificate-only .page { display: none !important; }
+            body.print-certificate-only #page-certificate { display: block !important; }
+            body.print-certificate-only .cert-outer { margin: 0 auto !important; }
+            body.print-certificate-only .container { box-shadow: none !important; border: none !important; padding: 0 !important; }
         }
         /* ===== تبويب شهادة الفائز وأرشيف الفائزين ===== */
         .cert-controls-row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px; }
@@ -255,6 +265,9 @@
         <button id="tab-btn-history" class="tab-btn" onclick="switchTab('history')">🔍 استرجاع وفحص التقييمات التفصيلية</button>
         <button id="tab-btn-certificate" class="tab-btn" onclick="switchTab('certificate')">🏅 شهادة الفائز</button>
         <button id="tab-btn-winners" class="tab-btn" onclick="switchTab('winners')">📜 أرشيف الفائزين</button>
+        <button id="tab-btn-qentry" class="tab-btn" onclick="switchTab('qentry')">📋 التقييم الربع سنوي</button>
+        <button id="tab-btn-qreport" class="tab-btn" onclick="switchTab('qreport')">📊 التقرير الربع سنوي المجمّع</button>
+        <button id="tab-btn-official" class="tab-btn" onclick="switchTab('official')">🏛️ التقييم الرسمي</button>
     </div>
 
     <div id="page-evaluate" class="page active">
@@ -350,7 +363,7 @@
             </div>
             <div class="cert-readout" id="certReadout">جاري تحميل بيانات الشهر...</div>
             <div class="cert-btn-row">
-                <button class="action-btn btn-refresh" onclick="downloadCertificate()">💾 تحميل الشهادة كصورة</button>
+                <button class="action-btn btn-refresh" onclick="printCertificate()">🖨️ طباعة / حفظ كـ PDF</button>
                 <button class="action-btn" style="background:#2980B9; color:#fff; border-color:#2980B9;" onclick="saveCertificateToArchive(event)">☁️ حفظ في الأرشيف</button>
             </div>
 
@@ -413,6 +426,108 @@
             </div>
             <div class="winners-month-list" id="winMonthList"></div>
             <div id="winnersResultPanel" style="margin-top:20px;"></div>
+        </div>
+    </div>
+
+    <div id="page-qentry" class="page">
+        <div class="table-title">📋 التقييم الربع سنوي — إدخال فردي</div>
+
+        <div id="qentryLogin" class="evaluation-box">
+            <div class="box-title">تسجيل الدخول لهذا التقييم</div>
+            <div class="grid-inputs">
+                <div class="form-group">
+                    <label>الفترة</label>
+                    <select id="qPeriodSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label>جهتك (دورك الوظيفي)</label>
+                    <select id="qRoleSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label>اسمك</label>
+                    <select id="qNameSelect"></select>
+                </div>
+            </div>
+            <div id="qAddPeriodBox" style="display:none; margin-top:10px; display:flex; gap:10px;">
+                <input type="text" id="qNewPeriodName" placeholder="اسم فترة جديدة، مثلاً: الفترة الثالثة 2026" style="flex:1; padding:10px; border:1px solid var(--input-border); border-radius:8px; background:var(--input-bg); color:var(--text-main);">
+                <button class="action-btn btn-refresh" onclick="addQuarterlyPeriod()">➕ إضافة فترة جديدة</button>
+            </div>
+            <button class="btn-save" onclick="enterQuarterlyEntry()">دخول</button>
+        </div>
+
+        <div id="qentryTableWrap" style="display:none; margin-top:20px;">
+            <div class="cert-readout" id="qEntryReadout"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th style="width:60px;">كود</th><th>اسم الموظف</th><th style="width:100px;">النسبة %</th><th>إيجابيات</th><th>سلبيات</th></tr></thead>
+                    <tbody id="qEntryTableBody"></tbody>
+                </table>
+            </div>
+            <button class="btn-save" onclick="saveQuarterlyEntries()">💾 حفظ كل التقييمات</button>
+        </div>
+    </div>
+
+    <div id="page-qreport" class="page">
+        <div id="qreportLocked" class="access-locked" style="display:none;">
+            🔒 هذا التبويب لأصحاب الصلاحية الكاملة فقط.<br><br>
+            دوس "👤 تغيير الهوية" وسجّل هويتك أولاً.
+        </div>
+        <div id="qreportContent" style="display:none;">
+            <div class="table-title">📊 التقرير الربع سنوي المجمّع</div>
+            <div class="cert-controls-row" style="margin-top:15px;">
+                <div class="cert-field">
+                    <label>الفترة</label>
+                    <select id="qReportPeriodSelect"></select>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead id="qReportTableHead"></thead>
+                    <tbody id="qReportTableBody"></tbody>
+                </table>
+            </div>
+            <div id="qReportDetailsPanel" style="margin-top:20px;"></div>
+        </div>
+    </div>
+
+    <div id="page-official" class="page">
+        <div id="officialLocked" class="access-locked" style="display:none;">
+            🔒 هذا التبويب مخصص فقط لمدير الإدارة والنواب.<br><br>
+            دوس "👤 تغيير الهوية" وسجّل هويتك أولاً.
+        </div>
+        <div id="officialContent" style="display:none;">
+            <div class="evaluation-box">
+                <div class="box-title">دليل التقييم السنوي — مراجع إدارة المراجعة</div>
+                <div class="grid-inputs">
+                    <div class="form-group">
+                        <label>اسم الموظف</label>
+                        <select id="officialEmployeeSelect"></select>
+                    </div>
+                    <div class="form-group score-group">
+                        <label>الدرجة الإجمالية</label>
+                        <input type="text" id="officialTotalScore" readonly value="0%" style="color:var(--primary); text-align:center; font-weight:900;">
+                    </div>
+                </div>
+
+                <div class="box-title" style="font-size:16px;">السمات الشخصية</div>
+                <div class="criteria-list" id="officialPersonalCriteria"></div>
+
+                <div class="box-title" style="font-size:16px;">جودة الأداء</div>
+                <div class="criteria-list" id="officialPerformanceCriteria"></div>
+
+                <div class="grid-inputs" style="margin-top:15px;">
+                    <div class="form-group">
+                        <label>وظيفة المقيم</label>
+                        <input type="text" id="officialEvaluatorTitle" placeholder="مثلاً: مدير الإدارة">
+                    </div>
+                    <div class="form-group">
+                        <label>التاريخ</label>
+                        <input type="date" id="officialDate">
+                    </div>
+                </div>
+
+                <button class="btn-save" onclick="saveOfficialEvaluation()">حفظ التقييم الرسمي</button>
+            </div>
         </div>
     </div>
 </div>
@@ -1162,6 +1277,9 @@ function switchTab(id) {
     if(id === 'leaderboard' || id === 'history') { syncDataLive(false); }
     if(id === 'certificate') { initCertificateTab(); }
     if(id === 'winners') { initWinnersTab(); }
+    if(id === 'qentry') { initQEntryTab(); }
+    if(id === 'qreport') { initQReportTab(); }
+    if(id === 'official') { initOfficialTab(); }
 }
 
 function toggleTheme() { isDarkMode = !isDarkMode; document.documentElement.setAttribute('data-theme', isDarkMode?'dark':'light'); }
@@ -1495,35 +1613,11 @@ function onCertPhotoChosen(e) {
     reader.readAsDataURL(file);
 }
 
-function downloadCertificate() {
+function printCertificate() {
     if (!certCurrentWinner) { alert('من فضلك اختار شهر عنده فائز محسوب أولاً.'); return; }
-
-    // بنفتح النافذة فوراً (قبل ما ننتظر رسم الصورة) عشان متصفحات الموبايل ما تمنعهاش
-    // باعتبارها "نافذة منبثقة"، لأنها لازم تتفتح كاستجابة مباشرة لضغطة المستخدم.
-    const newWin = window.open('', '_blank');
-
-    html2canvas(document.getElementById('certCard'), { scale: 2, useCORS: true }).then(canvas => {
-        const dataUrl = canvas.toDataURL('image/png');
-
-        if (newWin && !newWin.closed) {
-            newWin.document.write(
-                '<html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>شهادة الفائز - ' + certMonthKey() + '</title></head>' +
-                '<body style="margin:0; background:#222; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; font-family:sans-serif;">' +
-                '<img src="' + dataUrl + '" style="max-width:100%; height:auto;">' +
-                '<p style="color:#fff; text-align:center; padding:14px; font-size:15px;">📌 اضغط ضغطة مطوّلة على الصورة واختر "حفظ الصورة" لتحميلها على جهازك (أو كليك يمين "حفظ الصورة باسم" على الكمبيوتر)</p>' +
-                '</body></html>'
-            );
-        } else {
-            // لو المتصفح منع فتح نافذة جديدة، نرجع لطريقة التحميل المباشر كبديل
-            const link = document.createElement('a');
-            link.download = 'شهادة الموظف المثالي - ' + certMonthKey() + '.png';
-            link.href = dataUrl;
-            link.click();
-        }
-    }).catch(() => {
-        if (newWin) newWin.close();
-        alert('⚠️ حصل خطأ أثناء تجهيز صورة الشهادة، حاول تاني.');
-    });
+    document.body.classList.add('print-certificate-only');
+    window.print();
+    setTimeout(() => { document.body.classList.remove('print-certificate-only'); }, 500);
 }
 
 function saveCertificateToArchive(evt) {
@@ -1652,6 +1746,368 @@ function renderWinnersResult() {
                 (savedPhoto ? '' : '<div style="margin-top:14px;"><a href="#" onclick="switchTab(\'certificate\'); return false;" style="color:var(--primary); font-weight:700;">🏅 اذهب لتبويب الشهادات لرفع صورة الفائز</a></div>') +
             '</div>' +
         '</div>';
+}
+
+// ===== نظام التقييم الربع سنوي (فردي) =====
+const quarterlyEvaluatorRoles = [
+    { key: 'q_manager', label: 'مدير الإدارة (محمد مصطفي)' },
+    { key: 'q_deputy1', label: 'نائب المدير (محمد يسري)' },
+    { key: 'q_deputy2', label: 'نائب المدير (سعد محمد)' },
+    { key: 'q_tl_current', label: 'رئيس الفريق الحالي' },
+    { key: 'q_stock_current', label: 'تيم ليدر المخزون الحالي' },
+    { key: 'q_special_current', label: 'تيم ليدر المتخصصة الحالي' },
+    { key: 'q_finance_current', label: 'تيم ليدر المالية الحالي' },
+    { key: 'q_tl_previous', label: 'رئيس الفريق السابق' },
+    { key: 'q_stock_previous', label: 'تيم ليدر المخزون السابق' },
+    { key: 'q_special_previous', label: 'تيم ليدر المتخصصة السابق' },
+    { key: 'q_finance_previous', label: 'تيم ليدر المالية السابق' }
+];
+
+function getQuarterlyPeriods() {
+    return (monthlyArchive._quarterly && monthlyArchive._quarterly.periods) || [];
+}
+
+function initQEntryTab() {
+    const periodSelect = document.getElementById('qPeriodSelect');
+    periodSelect.innerHTML = '';
+    const periods = getQuarterlyPeriods();
+    if (periods.length === 0) {
+        let o = document.createElement('option'); o.value = ''; o.textContent = 'لا توجد فترات مضافة بعد';
+        periodSelect.appendChild(o);
+    } else {
+        periods.forEach(p => { let o = document.createElement('option'); o.value = p; o.textContent = p; periodSelect.appendChild(o); });
+    }
+
+    if (isFullAccessViewer()) {
+        document.getElementById('qAddPeriodBox').style.display = 'flex';
+    }
+
+    const roleSelect = document.getElementById('qRoleSelect');
+    if (!roleSelect.options.length) {
+        quarterlyEvaluatorRoles.forEach(r => { let o = document.createElement('option'); o.value = r.key; o.textContent = r.label; roleSelect.appendChild(o); });
+    }
+
+    const nameSelect = document.getElementById('qNameSelect');
+    if (!nameSelect.options.length) {
+        baseEmployeesDataset.forEach(e => { let o = document.createElement('option'); o.value = e.name; o.textContent = e.name; nameSelect.appendChild(o); });
+        ['محمد مصطفي', 'محمد يسري', 'سعد محمد'].forEach(n => {
+            let o = document.createElement('option'); o.value = n; o.textContent = n + ' (الإدارة العليا)'; nameSelect.appendChild(o);
+        });
+    }
+
+    const savedRole = localStorage.getItem('GomlaQuarterly_Role');
+    const savedName = localStorage.getItem('GomlaQuarterly_Name');
+    if (savedRole && savedName && periods.length > 0) {
+        roleSelect.value = savedRole;
+        nameSelect.value = savedName;
+        enterQuarterlyEntry();
+    }
+}
+
+function addQuarterlyPeriod() {
+    const input = document.getElementById('qNewPeriodName');
+    const name = input.value.trim();
+    if (!name) return;
+    if (getQuarterlyPeriods().includes(name)) { alert('⚠️ الفترة دي موجودة بالفعل.'); return; }
+
+    const formData = new URLSearchParams();
+    formData.append('action', 'addQuarterlyPeriod');
+    formData.append('sheet', TARGET_SHEET_NAME);
+    formData.append('period', name);
+
+    fetch(CLOUD_STORAGE_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: formData.toString()
+    }).then(() => {
+        input.value = '';
+        const script = document.createElement('script');
+        script.src = CLOUD_STORAGE_URL + "?action=get&sheet=" + encodeURIComponent(TARGET_SHEET_NAME) + "&callback=onCloudFetchSuccess";
+        document.body.appendChild(script);
+        setTimeout(() => { initQEntryTab(); alert('✅ تمت إضافة الفترة.'); }, 1200);
+    }).catch(() => alert('⚠️ تعذر الاتصال بالسيرفر.'));
+}
+
+let qCurrentRole = '', qCurrentName = '', qCurrentPeriod = '';
+
+function enterQuarterlyEntry() {
+    qCurrentPeriod = document.getElementById('qPeriodSelect').value;
+    qCurrentRole = document.getElementById('qRoleSelect').value;
+    qCurrentName = document.getElementById('qNameSelect').value;
+
+    if (!qCurrentPeriod) { alert('لا توجد فترة محددة. اطلب من مدير الإدارة يضيف فترة جديدة.'); return; }
+
+    localStorage.setItem('GomlaQuarterly_Role', qCurrentRole);
+    localStorage.setItem('GomlaQuarterly_Name', qCurrentName);
+
+    document.getElementById('qentryTableWrap').style.display = 'block';
+    renderQEntryTable();
+}
+
+function renderQEntryTable() {
+    const body = document.getElementById('qEntryTableBody');
+    body.innerHTML = '';
+    const existing = (monthlyArchive._quarterly && monthlyArchive._quarterly.entries && monthlyArchive._quarterly.entries[qCurrentPeriod]) || {};
+    const roleLabel = (quarterlyEvaluatorRoles.find(r => r.key === qCurrentRole) || {}).label || '';
+
+    document.getElementById('qEntryReadout').innerHTML =
+        'مسجل دخول باسم: <b>' + qCurrentName + '</b> — الدور: <b>' + roleLabel + '</b> — الفترة: <b>' + qCurrentPeriod + '</b>' +
+        ' &nbsp;|&nbsp; <a href="#" onclick="logoutQuarterly(); return false;" style="color:var(--danger); font-weight:700;">تسجيل خروج</a>';
+
+    baseEmployeesDataset.forEach(emp => {
+        const rec = (existing[emp.id] && existing[emp.id][qCurrentRole]) || {};
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+            '<td>' + emp.id + '</td>' +
+            '<td class="emp-name">' + emp.name + '</td>' +
+            '<td><input type="number" min="0" max="100" value="' + (rec.percentage || '') + '" data-emp="' + emp.id + '" class="qPercentInput" style="width:70px; text-align:center; padding:6px; border:1px solid var(--input-border); border-radius:4px; background:var(--input-bg); color:var(--text-main);"></td>' +
+            '<td><textarea data-emp="' + emp.id + '" class="qProsInput" rows="2" style="width:100%; padding:6px; border:1px solid var(--input-border); border-radius:4px; background:var(--input-bg); color:var(--text-main);">' + (rec.pros || '') + '</textarea></td>' +
+            '<td><textarea data-emp="' + emp.id + '" class="qConsInput" rows="2" style="width:100%; padding:6px; border:1px solid var(--input-border); border-radius:4px; background:var(--input-bg); color:var(--text-main);">' + (rec.cons || '') + '</textarea></td>';
+        body.appendChild(tr);
+    });
+}
+
+function logoutQuarterly() {
+    localStorage.removeItem('GomlaQuarterly_Role');
+    localStorage.removeItem('GomlaQuarterly_Name');
+    document.getElementById('qentryTableWrap').style.display = 'none';
+}
+
+function saveQuarterlyEntries() {
+    const entries = [];
+    document.querySelectorAll('.qPercentInput').forEach(input => {
+        const empId = input.dataset.emp;
+        const pct = parseFloat(input.value) || 0;
+        const pros = (document.querySelector('.qProsInput[data-emp="' + empId + '"]') || {}).value || '';
+        const cons = (document.querySelector('.qConsInput[data-emp="' + empId + '"]') || {}).value || '';
+        if (pct > 0 || pros || cons) {
+            entries.push({ employeeId: empId, percentage: pct, pros: pros, cons: cons });
+        }
+    });
+
+    if (entries.length === 0) { alert('مفيش أي بيانات مدخلة للحفظ.'); return; }
+
+    const formData = new URLSearchParams();
+    formData.append('action', 'saveQuarterly');
+    formData.append('sheet', TARGET_SHEET_NAME);
+    formData.append('period', qCurrentPeriod);
+    formData.append('roleKey', qCurrentRole);
+    formData.append('evaluatorName', qCurrentName);
+    formData.append('entries', JSON.stringify(entries));
+
+    fetch(CLOUD_STORAGE_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: formData.toString()
+    }).then(() => {
+        alert('✅ تم حفظ كل تقييماتك بنجاح.');
+        syncDataLive(false);
+    }).catch(() => alert('⚠️ تعذر الاتصال بالسيرفر.'));
+}
+
+// ===== التقرير الربع سنوي المجمّع (لصاحب الصلاحية الكاملة فقط) =====
+function initQReportTab() {
+    if (!isFullAccessViewer()) {
+        document.getElementById('qreportLocked').style.display = 'block';
+        document.getElementById('qreportContent').style.display = 'none';
+        return;
+    }
+    document.getElementById('qreportLocked').style.display = 'none';
+    document.getElementById('qreportContent').style.display = 'block';
+
+    const periodSelect = document.getElementById('qReportPeriodSelect');
+    const current = periodSelect.value;
+    periodSelect.innerHTML = '';
+    getQuarterlyPeriods().forEach(p => { let o = document.createElement('option'); o.value = p; o.textContent = p; periodSelect.appendChild(o); });
+    if (getQuarterlyPeriods().includes(current)) periodSelect.value = current;
+    periodSelect.onchange = renderQReport;
+
+    renderQReport();
+}
+
+function renderQReport() {
+    const period = document.getElementById('qReportPeriodSelect').value;
+    const head = document.getElementById('qReportTableHead');
+    const body = document.getElementById('qReportTableBody');
+    document.getElementById('qReportDetailsPanel').innerHTML = '';
+
+    if (!period) {
+        head.innerHTML = '';
+        body.innerHTML = '<tr><td class="empty-state">لا توجد فترات مضافة بعد.</td></tr>';
+        return;
+    }
+
+    let headHtml = '<tr><th>كود</th><th>الاسم</th>';
+    quarterlyEvaluatorRoles.forEach(r => { headHtml += '<th style="font-size:10px;">' + r.label + '</th>'; });
+    headHtml += '<th>المتوسط</th></tr>';
+    head.innerHTML = headHtml;
+
+    const periodData = (monthlyArchive._quarterly && monthlyArchive._quarterly.entries && monthlyArchive._quarterly.entries[period]) || {};
+
+    body.innerHTML = '';
+    baseEmployeesDataset.forEach(emp => {
+        const empData = periodData[emp.id] || {};
+        let total = 0, count = 0;
+        let rowHtml = '<td>' + emp.id + '</td><td class="emp-name" style="cursor:pointer; color:var(--primary); text-decoration:underline;" onclick="showQReportDetails(' + emp.id + ', \'' + period + '\')">' + emp.name + '</td>';
+
+        quarterlyEvaluatorRoles.forEach(r => {
+            const cell = empData[r.key];
+            if (cell && cell.percentage > 0) {
+                rowHtml += '<td>' + cell.percentage + '%</td>';
+                total += cell.percentage; count++;
+            } else {
+                rowHtml += '<td>-</td>';
+            }
+        });
+
+        const avg = count > 0 ? (total / count).toFixed(1) : '-';
+        rowHtml += '<td class="final-avg">' + avg + (count > 0 ? '%' : '') + '</td>';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = rowHtml;
+        body.appendChild(tr);
+    });
+}
+
+function showQReportDetails(empId, period) {
+    const emp = baseEmployeesDataset.find(e => String(e.id) === String(empId));
+    const empData = (monthlyArchive._quarterly && monthlyArchive._quarterly.entries && monthlyArchive._quarterly.entries[period] && monthlyArchive._quarterly.entries[period][empId]) || {};
+    const panel = document.getElementById('qReportDetailsPanel');
+
+    let html = '<div class="table-title" style="font-size:16px;">تفاصيل تقييم: ' + (emp ? emp.name : empId) + ' — ' + period + '</div>';
+    let hasAny = false;
+
+    quarterlyEvaluatorRoles.forEach(r => {
+        const cell = empData[r.key];
+        if (!cell) return;
+        hasAny = true;
+        html += '<div class="history-criteria-block">' +
+            '<strong>' + r.label + '</strong> (' + (cell.evaluatorName || '') + ') — <span style="color:var(--primary); font-weight:900;">' + cell.percentage + '%</span>' +
+            (cell.pros ? '<div style="margin-top:6px;"><b>إيجابيات:</b> ' + cell.pros + '</div>' : '') +
+            (cell.cons ? '<div style="margin-top:4px;"><b>سلبيات:</b> ' + cell.cons + '</div>' : '') +
+            '</div>';
+    });
+
+    if (!hasAny) html += '<div class="empty-state">لا توجد تقييمات مسجلة لهذا الموظف في هذه الفترة.</div>';
+    panel.innerHTML = html;
+}
+
+// ===== التقييم الرسمي (نسخة نموذج الـHR) — مدير الإدارة والنواب فقط =====
+const officialPersonalCriteria = [
+    "الإلتزام ببروتوكول العمل (المظهر الشخصي- النظافة الشخصية)",
+    "تحمل المسئولية والقدرة على تحمل متطلبات العمل",
+    "اللباقة وحسن المعاملة مع الإدارات المختلفة",
+    "المرونة وسرعة البديهة والقدرة على التكيف مع متغيرات العمل المختلفة والطارئة"
+];
+const officialPerformanceCriteria = [
+    "سرعة ودقة تنفيذ مهام العمل اليومية بشكل منتظم وبدون تأخير",
+    "متابعة وسرعة الإبلاغ عن الأخطاء التي تم اكتشافها أثناء المراجعة",
+    "التواصل مع الإدارات المراجع عليها ومتابعة علاج المشكلات أو الملاحظات المرسلة إليها",
+    "إعداد التقارير الدورية المطلوبة بشكل منتظم ودقيق",
+    "المرونة في حالة الانتقال بين أقسام إدارة المراجعة والتدريب على العمل في الأقسام المختلفة داخلها",
+    "القدرة على نقل الخبرات وتدريب الآخرين",
+    "المرونة والتعاون مع الزملاء داخل الإدارة",
+    "المبادرة وتقديم الاقتراحات في مجال العمل"
+];
+// تحويل افتراضي من التقدير للنسبة % — عدّله هنا لو الـHR عندهم مقياس مختلف
+const officialRatingScale = [
+    { value: 100, label: 'ممتاز' },
+    { value: 85, label: 'جيد جداً' },
+    { value: 70, label: 'جيد' },
+    { value: 50, label: 'مقبول' }
+];
+
+function initOfficialTab() {
+    if (!isFullAccessViewer()) {
+        document.getElementById('officialLocked').style.display = 'block';
+        document.getElementById('officialContent').style.display = 'none';
+        return;
+    }
+    document.getElementById('officialLocked').style.display = 'none';
+    document.getElementById('officialContent').style.display = 'block';
+
+    const empSelect = document.getElementById('officialEmployeeSelect');
+    if (!empSelect.options.length) {
+        baseEmployeesDataset.forEach(e => { let o = document.createElement('option'); o.value = e.id; o.textContent = e.name + ' (' + e.id + ')'; empSelect.appendChild(o); });
+        empSelect.onchange = loadOfficialEvaluation;
+        buildOfficialCriteriaForm();
+        document.getElementById('officialDate').value = new Date().toISOString().slice(0, 10);
+    }
+    loadOfficialEvaluation();
+}
+
+function buildOfficialCriteriaForm() {
+    const personalBox = document.getElementById('officialPersonalCriteria');
+    const perfBox = document.getElementById('officialPerformanceCriteria');
+    personalBox.innerHTML = '';
+    perfBox.innerHTML = '';
+    officialPersonalCriteria.forEach((text, i) => personalBox.appendChild(buildOfficialCriterionRow('op_' + i, text)));
+    officialPerformanceCriteria.forEach((text, i) => perfBox.appendChild(buildOfficialCriterionRow('oq_' + i, text)));
+}
+
+function buildOfficialCriterionRow(id, text) {
+    const row = document.createElement('div');
+    row.className = 'criterion-row';
+    let optionsHtml = '';
+    officialRatingScale.forEach(o => { optionsHtml += '<option value="' + o.value + '">' + o.label + '</option>'; });
+    row.innerHTML = '<span>' + text + '</span><select id="' + id + '" onchange="calculateOfficialTotal()" style="padding:6px; border-radius:4px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-main);">' + optionsHtml + '</select>';
+    return row;
+}
+
+function calculateOfficialTotal() {
+    let total = 0, count = 0;
+    officialPersonalCriteria.forEach((t, i) => { const el = document.getElementById('op_' + i); if (el) { total += parseFloat(el.value); count++; } });
+    officialPerformanceCriteria.forEach((t, i) => { const el = document.getElementById('oq_' + i); if (el) { total += parseFloat(el.value); count++; } });
+    const avg = count > 0 ? (total / count).toFixed(1) : 0;
+    document.getElementById('officialTotalScore').value = avg + '%';
+    return avg;
+}
+
+function loadOfficialEvaluation() {
+    const empId = document.getElementById('officialEmployeeSelect').value;
+    const myRole = getViewerRole();
+    const rec = monthlyArchive._official && monthlyArchive._official[empId] && monthlyArchive._official[empId][myRole];
+
+    officialPersonalCriteria.forEach((t, i) => { const el = document.getElementById('op_' + i); if (el) el.value = (rec && rec.ratings && rec.ratings['op_' + i] !== undefined) ? rec.ratings['op_' + i] : 100; });
+    officialPerformanceCriteria.forEach((t, i) => { const el = document.getElementById('oq_' + i); if (el) el.value = (rec && rec.ratings && rec.ratings['oq_' + i] !== undefined) ? rec.ratings['oq_' + i] : 100; });
+    document.getElementById('officialEvaluatorTitle').value = rec ? (rec.evaluatorTitle || '') : '';
+    calculateOfficialTotal();
+}
+
+function saveOfficialEvaluation() {
+    const empId = document.getElementById('officialEmployeeSelect').value;
+    const myRole = getViewerRole();
+    if (myRole !== 'manager' && myRole !== 'deputy1' && myRole !== 'deputy2') {
+        alert('⛔ غير مصرح لك بهذا التقييم.');
+        return;
+    }
+
+    const ratings = {};
+    officialPersonalCriteria.forEach((t, i) => { ratings['op_' + i] = parseFloat(document.getElementById('op_' + i).value); });
+    officialPerformanceCriteria.forEach((t, i) => { ratings['oq_' + i] = parseFloat(document.getElementById('oq_' + i).value); });
+
+    const percentage = calculateOfficialTotal();
+    const evaluatorTitle = document.getElementById('officialEvaluatorTitle').value;
+    const date = document.getElementById('officialDate').value;
+
+    const formData = new URLSearchParams();
+    formData.append('action', 'saveOfficial');
+    formData.append('sheet', TARGET_SHEET_NAME);
+    formData.append('employeeId', empId);
+    formData.append('roleKey', myRole);
+    formData.append('ratings', JSON.stringify(ratings));
+    formData.append('percentage', percentage);
+    formData.append('evaluatorTitle', evaluatorTitle);
+    formData.append('date', date);
+
+    fetch(CLOUD_STORAGE_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: formData.toString()
+    }).then(() => {
+        alert('✅ تم حفظ التقييم الرسمي.');
+        syncDataLive(false);
+    }).catch(() => alert('⚠️ تعذر الاتصال بالسيرفر.'));
 }
 </script>
 </body>
