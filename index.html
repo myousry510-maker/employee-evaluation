@@ -685,20 +685,8 @@ function confirmViewerIdentity() {
     const codeInput = document.getElementById('viewerIdentityPassword');
     const code = codeInput ? codeInput.value : '';
 
-    // لو كتب رمز وهو مختار "مدير الإدارة" أو "النائب"، ممكن يكون أول مرة يسجّل رمزه الخاص،
-    // فبنطلب تأكيده مرة كمان قبل ما نبعته للسيرفر عشان لو غلط في الكتابة ميقفلش بيه غلط.
-    if (code && (role === 'manager' || role === 'deputy1' || role === 'deputy2')) {
-        const confirmCode = prompt('🔁 اكتب نفس الرمز تاني للتأكيد:');
-        if (confirmCode === null || confirmCode !== code) {
-            // التأكيد مش مطابق أو اتلغى؛ ندخل بصلاحية عادية من غير ما نسجل أو نغيّر أي حاجة
-            setViewerIdentity(role, false);
-            return;
-        }
-    }
-
-    // بنبعت الاختيار والرمز (لو موجود) للسيرفر دايماً بنفس الطريقة أياً كانت الجهة المختارة،
-    // عشان مفيش أي فرق ملحوظ في سلوك الواجهة بين جهة وجهة. السيرفر هو اللي يقرر بصمت
-    // هل الرمز ده يسجّل لأول مرة، أو يتطابق مع رمز مسجّل قبل كده، أو يفتح صلاحية عادية بس.
+    // كتابة واحدة بس في كل مرة — مفيش أي تأكيد متكرر. أول مرة تكتب رمز لجهة محمية (مدير
+    // الإدارة / أحد النواب) بيتسجل تلقائياً كرمزها الدائم، وأي مرة بعد كده بيتحقق منه بصمت.
     _pendingIdentityRole = role;
     const script = document.createElement('script');
     script.src = CLOUD_STORAGE_URL + "?action=verifyIdentity&role=" + encodeURIComponent(role) +
@@ -725,6 +713,16 @@ function setViewerIdentity(role, fullAccess) {
     if (overlay) overlay.style.display = 'none';
     renderAndSortDashboard();
     renderHistorySidebar();
+
+    // ملاحظة صامتة لأصحاب الجهات المحمية بس (مدير الإدارة / النواب)، عشان ميفضلوش حائرين
+    // هل الرمز اتسجل صح ولا لأ. باقي الجهات العادية مش بيظهرلهم أي حاجة زيادة خالص.
+    if (role === 'manager' || role === 'deputy1' || role === 'deputy2') {
+        if (fullAccess) {
+            alert('✅ تم تسجيل الدخول بصلاحية كاملة.');
+        } else {
+            alert('⚠️ الرمز المُدخل غير مطابق للمسجّل، فتم الدخول بصلاحية عادية (محدودة) فقط.\n\nلو متأكد إن ده رمزك الصحيح وأول مرة تستخدمه، جرّب "تغيير الهوية" تاني واكتبه بعناية (بدون مسافات زيادة).');
+        }
+    }
 }
 // ===== نهاية نظام الهوية =====
 
@@ -1801,6 +1799,16 @@ function initQEntryTab() {
         roleSelect.value = savedRole;
         nameSelect.value = savedName;
         enterQuarterlyEntry();
+        return;
+    }
+
+    // تعبئة تلقائية لمدير الإدارة والنواب — هويتهم معروفة بالفعل من نظام الصلاحيات،
+    // فمش محتاجين يختاروا نفسهم يدوياً كل مرة
+    const myRole = getViewerRole();
+    const autoFillMap = { manager: ['q_manager', 'محمد مصطفي'], deputy1: ['q_deputy1', 'محمد يسري'], deputy2: ['q_deputy2', 'سعد محمد'] };
+    if (autoFillMap[myRole] && !savedRole) {
+        roleSelect.value = autoFillMap[myRole][0];
+        nameSelect.value = autoFillMap[myRole][1];
     }
 }
 
@@ -1821,10 +1829,20 @@ function addQuarterlyPeriod() {
         body: formData.toString()
     }).then(() => {
         input.value = '';
+        // بدل ما نستنى وقت ثابت "على الحظ"، بنستنى فعلياً لحد ما السيرفر يرد بالبيانات
+        // المؤكدة قبل ما نحدّث القائمة، عشان الفترة الجديدة تظهر أكيد من غير أي تأخير عشوائي
+        const cbName = '__addPeriodCheck_' + Date.now();
+        window[cbName] = function(response) {
+            delete window[cbName];
+            applyServerArchive(response);
+            initQEntryTab();
+            initQReportTab();
+            alert('✅ تمت إضافة الفترة.');
+        };
         const script = document.createElement('script');
-        script.src = CLOUD_STORAGE_URL + "?action=get&sheet=" + encodeURIComponent(TARGET_SHEET_NAME) + "&callback=onCloudFetchSuccess";
+        script.src = CLOUD_STORAGE_URL + "?action=get&sheet=" + encodeURIComponent(TARGET_SHEET_NAME) + "&callback=" + cbName;
+        script.onerror = function() { alert('⚠️ اتبعتت الفترة للسيرفر بس تعذر تأكيد وصولها، دوس "تحديث ومزامنة" وشوف.'); };
         document.body.appendChild(script);
-        setTimeout(() => { initQEntryTab(); alert('✅ تمت إضافة الفترة.'); }, 1200);
     }).catch(() => alert('⚠️ تعذر الاتصال بالسيرفر.'));
 }
 
