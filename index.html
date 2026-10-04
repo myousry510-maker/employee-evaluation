@@ -133,10 +133,44 @@
             body.print-certificate-only #page-certificate .cert-readout,
             body.print-certificate-only #page-certificate .cert-btn-row,
             body.print-certificate-only #page-certificate .table-title { display: none !important; }
-            body.print-certificate-only .page { display: none !important; }
+            /* لازم نستهدف كل صفحة بالـ ID بالاسم عشان نتغلب على القاعدة القديمة اللي بتفرض
+               ظهور لوحة الصدارة (#page-leaderboard) بقوة أعلى من أي قاعدة عامة بالكلاس بس */
+            body.print-certificate-only #page-evaluate,
+            body.print-certificate-only #page-leaderboard,
+            body.print-certificate-only #page-history,
+            body.print-certificate-only #page-winners,
+            body.print-certificate-only #page-qentry,
+            body.print-certificate-only #page-qreport,
+            body.print-certificate-only #page-official { display: none !important; }
             body.print-certificate-only #page-certificate { display: block !important; }
-            body.print-certificate-only .cert-outer { margin: 0 auto !important; }
-            body.print-certificate-only .container { box-shadow: none !important; border: none !important; padding: 0 !important; }
+            body.print-certificate-only .container { box-shadow: none !important; border: none !important; padding: 0 !important; max-width: none !important; }
+            body.print-certificate-only, body.print-certificate-only html {
+                display: flex !important; align-items: center; justify-content: center; min-height: 100vh; margin: 0 !important;
+            }
+            /* الشهادة كانت بعرض ثابت 1000px بيتخطى عرض الصفحة المطبوعة فتتقص من جانب؛
+               هنا بتاخد عرض الصفحة المتاح بالكامل وتتمركز، والطول بيتبع النسبة تلقائياً */
+            body.print-certificate-only .cert-outer {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+                page-break-inside: avoid !important; break-inside: avoid !important;
+            }
+            body.print-certificate-only .cert-card {
+                width: 100% !important;
+                min-height: 0 !important;
+                page-break-inside: avoid !important; break-inside: avoid !important;
+            }
+            /* تصغير الحشو والخطوط شوية وقت الطباعة بس، عشان الشهادة كلها تتظبط في صفحة واحدة
+               من غير ترحيل لصفحة تانية، مهما كان حجم الشاشة اللي بتتصفح بيها */
+            body.print-certificate-only .cert-left { padding: 18px 22px !important; gap: 5px !important; }
+            body.print-certificate-only .cert-title { font-size: 26px !important; margin-top: 2px !important; }
+            body.print-certificate-only .cert-name { font-size: 28px !important; }
+            body.print-certificate-only .cert-subtitle2 { font-size: 15px !important; }
+            body.print-certificate-only .cert-paragraph { font-size: 11px !important; margin-top: 6px !important; }
+            body.print-certificate-only .cert-right { padding: 16px 14px 12px !important; }
+            body.print-certificate-only .cert-photo-frame { width: 150px !important; height: 150px !important; }
+            body.print-certificate-only .cert-ring-badge { width: 100px !important; height: 100px !important; margin-top: -24px !important; }
+            @page { margin: 0.4in; }
         }
         /* ===== تبويب شهادة الفائز وأرشيف الفائزين ===== */
         .cert-controls-row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px; }
@@ -248,7 +282,7 @@
             <option value="فبراير 2026">فبراير 2026</option>
             <option value="مارس 2026">مارس 2026</option>
             <option value="أبريل 2026">أبريل 2026</option>
-            <option value="مايو 2026" selected>مايو 2026</option>
+            <option value="مايو 2026">مايو 2026</option>
             <option value="يونيو 2026">يونيو 2026</option>
             <option value="يوليو 2026">يوليو 2026</option>
             <option value="أغسطس 2026">أغسطس 2026</option>
@@ -267,12 +301,16 @@
         <button id="tab-btn-winners" class="tab-btn" onclick="switchTab('winners')">📜 أرشيف الفائزين</button>
         <button id="tab-btn-qentry" class="tab-btn" onclick="switchTab('qentry')">📋 التقييم الربع سنوي</button>
         <button id="tab-btn-qreport" class="tab-btn" onclick="switchTab('qreport')">📊 التقرير الربع سنوي المجمّع</button>
+        <button id="tab-btn-qfeedback" class="tab-btn" onclick="switchTab('qfeedback')">💬 الإيجابيات والسلبيات المجمّعة</button>
         <button id="tab-btn-official" class="tab-btn" onclick="switchTab('official')">🏛️ التقييم الرسمي</button>
     </div>
 
     <div id="page-evaluate" class="page active">
         <div class="evaluation-box">
-            <div class="box-title" id="evaluateBoxTitle">إدخال وبناء درجات المحاور لشهر (مايو 2026)</div>
+            <div id="editMoveBanner" style="display:none; background:#FFF4EC; border:1px dashed var(--primary); border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:13px; font-weight:700; color:var(--primary);">
+                ✏️ بتعدّل تقييم محفوظ. لو كان متسجل بالغلط في شهر أو جهة تقييم خطأ، غيّر "الشهر" فوق و/أو "جهة التصويت" تحت للصح، والقيم اللي قدامك هتتحفظ في المكان الجديد، والنسخة القديمة هتتشال تلقائياً.
+                &nbsp;<a href="#" onclick="cancelEditMove(); return false;" style="color:var(--danger);">إلغاء وضع التعديل</a>
+            </div>
             <div class="grid-inputs">
                 <div class="form-group">
                     <label for="employeeSelect">اسم الموظف المرشح للتقييم:</label>
@@ -281,7 +319,7 @@
                 </div>
                 <div class="form-group">
                     <label for="evaluatorTypeSelect">جهة التصويت والتقييم الحالية (9 جهات):</label>
-                    <select id="evaluatorTypeSelect" onchange="refreshEmployeeSelectByRemaining(); loadSavedInputsIfExist();"></select>
+                    <select id="evaluatorTypeSelect" onchange="handleEvaluatorTypeChange();"></select>
                 </div>
 
                 <div class="form-group">
@@ -463,7 +501,10 @@
                     <tbody id="qEntryTableBody"></tbody>
                 </table>
             </div>
-            <button class="btn-save" onclick="saveQuarterlyEntries()">💾 حفظ كل التقييمات</button>
+            <div class="cert-btn-row">
+                <button class="btn-save" style="flex:1;" onclick="saveQuarterlyEntries()">💾 حفظ كل التقييمات</button>
+                <button class="action-btn btn-danger" onclick="deleteMyQuarterlyEntries()">🗑️ حذف تقييماتي لهذه الفترة</button>
+            </div>
         </div>
     </div>
 
@@ -479,6 +520,7 @@
                     <label>الفترة</label>
                     <select id="qReportPeriodSelect"></select>
                 </div>
+                <button class="action-btn btn-dark-danger" onclick="wipeQuarterlyPeriod()">🗑️ حذف بيانات هذه الفترة نهائياً (بكلمة سر)</button>
             </div>
             <div class="table-container">
                 <table>
@@ -487,6 +529,23 @@
                 </table>
             </div>
             <div id="qReportDetailsPanel" style="margin-top:20px;"></div>
+        </div>
+    </div>
+
+    <div id="page-qfeedback" class="page">
+        <div id="qfeedbackLocked" class="access-locked" style="display:none;">
+            🔒 هذا التبويب لأصحاب الصلاحية الكاملة فقط.<br><br>
+            دوس "👤 تغيير الهوية" وسجّل هويتك أولاً.
+        </div>
+        <div id="qfeedbackContent" style="display:none;">
+            <div class="table-title">💬 الإيجابيات والسلبيات المجمّعة لكل موظف</div>
+            <div class="cert-controls-row" style="margin-top:15px;">
+                <div class="cert-field">
+                    <label>الفترة</label>
+                    <select id="qFeedbackPeriodSelect"></select>
+                </div>
+            </div>
+            <div id="qFeedbackList" style="margin-top:20px;"></div>
         </div>
     </div>
 
@@ -499,6 +558,10 @@
             <div class="evaluation-box">
                 <div class="box-title">دليل التقييم السنوي — مراجع إدارة المراجعة</div>
                 <div class="grid-inputs">
+                    <div class="form-group">
+                        <label>السنة</label>
+                        <select id="officialYearSelect"></select>
+                    </div>
                     <div class="form-group">
                         <label>اسم الموظف</label>
                         <select id="officialEmployeeSelect"></select>
@@ -526,7 +589,10 @@
                     </div>
                 </div>
 
-                <button class="btn-save" onclick="saveOfficialEvaluation()">حفظ التقييم الرسمي</button>
+                <div class="cert-btn-row">
+                    <button class="btn-save" style="flex:1;" onclick="saveOfficialEvaluation()">حفظ التقييم الرسمي</button>
+                    <button class="action-btn btn-dark-danger" onclick="wipeOfficialEvaluation()">🗑️ حذف هذا التقييم (بكلمة سر)</button>
+                </div>
             </div>
         </div>
     </div>
@@ -734,6 +800,21 @@ function initApp() {
             baseEmployeesDataset = monthlyArchive._meta.employees;
         }
     }
+
+    // الشهر الافتراضي = الشهر السابق للشهر الحالي تلقائياً (إحنا بنقيّم عن الشهر اللي فات
+    // دايماً)، بدل ما يفضل ثابت على شهر معيّن وزميل ينسى يغيّره
+    (function setDefaultMonth() {
+        const namesAr = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+        const now = new Date();
+        let prevMonthIdx = now.getMonth() - 1;
+        let prevYear = now.getFullYear();
+        if (prevMonthIdx < 0) { prevMonthIdx = 11; prevYear -= 1; }
+        const defaultValue = namesAr[prevMonthIdx] + ' ' + prevYear;
+        const monthSelect = document.getElementById('globalMonthSelect');
+        if (monthSelect && monthSelect.querySelector('option[value="' + defaultValue + '"]')) {
+            monthSelect.value = defaultValue;
+        }
+    })();
 
     // بناء قائمة "جهة التصويت" ديناميكياً من evaluatorRoles (بدل تكرارها يدوياً في الـ HTML)
     const evaluatorTypeSelect = document.getElementById('evaluatorTypeSelect');
@@ -1031,9 +1112,36 @@ function onCloudSaveSuccess(response) {
     refreshEvaluatorHeaders();
     renderHistorySidebar();
     refreshEmployeeSelectByRemaining();
-    switchTab('leaderboard');
 
-    alert("تم الحفظ");
+    // لو كنا في وضع "نقل تقييم" والوجهة اتغيّرت عن المصدر الأصلي، نشيل النسخة القديمة
+    const newMonth = document.getElementById('globalMonthSelect').value;
+    const newRole = document.getElementById('evaluatorTypeSelect').value;
+    const newEmpId = parseInt(document.getElementById('employeeSelect').value);
+
+    if (editMoveActive && (newMonth !== editMoveSourceMonth || newRole !== editMoveSourceRole) && editMoveSourceEmpId !== null) {
+        const clearFormData = new URLSearchParams();
+        clearFormData.append('action', 'clearSingleEvaluation');
+        clearFormData.append('sheet', TARGET_SHEET_NAME);
+        clearFormData.append('month', editMoveSourceMonth);
+        clearFormData.append('employeeId', editMoveSourceEmpId);
+        clearFormData.append('roleKey', editMoveSourceRole);
+
+        fetch(CLOUD_STORAGE_URL, {
+            method: 'POST', mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: clearFormData.toString()
+        }).then(() => {
+            cancelEditMove();
+            syncDataLive(false);
+            alert("✅ تم حفظ التقييم في المكان الصحيح، وتم حذف النسخة القديمة الغلط تلقائياً.");
+        }).catch(() => {
+            alert("⚠️ تم الحفظ في المكان الجديد، لكن تعذر حذف النسخة القديمة تلقائياً. دوس 'تحديث ومزامنة' وجرّب تاني أو قولّي.");
+        });
+    } else {
+        cancelEditMove();
+        switchTab('leaderboard');
+        alert("تم الحفظ");
+    }
 }function syncDataLive(showAlert = true) {
     const btn = document.querySelector('.btn-refresh');
     if (showAlert && btn) btn.textContent = "⏳ جاري فحص ومزامنة البيانات...";
@@ -1111,7 +1219,15 @@ function renderAndSortDashboard() {
         return { emp, rec, avg: count > 0 ? (tot/count).toFixed(2) : "0.00", count };
     });
 
-    list.sort((a,b) => parseFloat(b.avg) - parseFloat(a.avg));
+    // ترتيب الفوز: الأولوية لعدد المقيّمين (الأصوات) الأعلى، وبعدين المتوسط، وتقييم مدير
+    // الإدارة فيصل أخير عند التعادل التام في الاتنين
+    list.sort((a,b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        if (parseFloat(b.avg) !== parseFloat(a.avg)) return parseFloat(b.avg) - parseFloat(a.avg);
+        const aManager = (a.rec && a.rec.scores && a.rec.scores.manager) || 0;
+        const bManager = (b.rec && b.rec.scores && b.rec.scores.manager) || 0;
+        return bManager - aManager;
+    });
 
     const committeeSize = evaluatorRoles.filter(r => r.key !== 'manager').length;
 
@@ -1219,6 +1335,11 @@ function showDetails(id, name) {
 // يودّي المستخدم لتبويب "رصد تقييم جديد" مع تحميل نفس تقييم الموظف وجهة التقييم دي بالظبط،
 // عشان يقدر يصحح أي درجة غلط بسهولة. الحفظ بعد كده هيستبدل بس هذا التقييم تحديداً، ومفيش
 // أي تأثير على باقي الموظفين أو باقي الجهات أو باقي الشهور.
+let editMoveActive = false;
+let editMoveSourceMonth = '';
+let editMoveSourceRole = '';
+let editMoveSourceEmpId = null;
+
 function editThisEvaluation(empId, roleKey) {
     // نبني القائمة كاملة مؤقتاً هنا عشان تقدر تلاقي الموظف حتى لو كان مستبعد من قائمة
     // "الباقي تقييمهم" لأنه سبق تقييمه فعلاً
@@ -1229,10 +1350,31 @@ function editThisEvaluation(empId, roleKey) {
     if (employeeSelect) employeeSelect.value = empId;
     if (evaluatorTypeSelect) evaluatorTypeSelect.value = roleKey;
 
+    // بنسجل "المصدر" الأصلي (الشهر والجهة الحاليين) عشان لو اتغيّروا بعد كده، نعرف نشيل
+    // النسخة القديمة تلقائياً بعد ما نحفظ في المكان الجديد
+    editMoveActive = true;
+    editMoveSourceMonth = document.getElementById('globalMonthSelect').value;
+    editMoveSourceRole = roleKey;
+    editMoveSourceEmpId = empId;
+
+    const banner = document.getElementById('editMoveBanner');
+    if (banner) banner.style.display = 'block';
+
     switchTab('evaluate');
     loadSavedInputsIfExist();
+}
 
-    alert("📝 تم تحميل التقييم القديم لهذا الموظف وهذه الجهة، صحّح الدرجات ثم اضغط 'حفظ التقييم' عشان يتم استبداله.");
+function handleEvaluatorTypeChange() {
+    if (editMoveActive) return; // في وضع نقل تقييم: متلمسش القيم المحمّلة
+    refreshEmployeeSelectByRemaining();
+    loadSavedInputsIfExist();
+}
+
+function cancelEditMove() {
+    editMoveActive = false;
+    editMoveSourceMonth = ''; editMoveSourceRole = ''; editMoveSourceEmpId = null;
+    const banner = document.getElementById('editMoveBanner');
+    if (banner) banner.style.display = 'none';
 }
 
 function renderHistoryDetailedCriteria(empId) {
@@ -1260,8 +1402,11 @@ function renderHistoryDetailedCriteria(empId) {
 }
 
 function handleMonthChange() {
-    const txt = document.getElementById('globalMonthSelect').options[document.getElementById('globalMonthSelect').selectedIndex].text;
-    document.getElementById('evaluateBoxTitle').textContent = 'إدخال وبناء درجات المحاور لشهر (' + txt + ')';
+    if (editMoveActive) {
+        // في وضع نقل تقييم: متلمسش القيم المحمّلة على الشاشة، بس استنى يدوس "حفظ"
+        syncDataLive(false);
+        return;
+    }
     refreshEmployeeSelectByRemaining();
     loadSavedInputsIfExist(); syncDataLive(false);
 }
@@ -1278,6 +1423,7 @@ function switchTab(id) {
     if(id === 'qentry') { initQEntryTab(); }
     if(id === 'qreport') { initQReportTab(); }
     if(id === 'official') { initOfficialTab(); }
+    if(id === 'qfeedback') { initQFeedbackTab(); }
 }
 
 function toggleTheme() { isDarkMode = !isDarkMode; document.documentElement.setAttribute('data-theme', isDarkMode?'dark':'light'); }
@@ -1613,9 +1759,21 @@ function onCertPhotoChosen(e) {
 
 function printCertificate() {
     if (!certCurrentWinner) { alert('من فضلك اختار شهر عنده فائز محسوب أولاً.'); return; }
+
+    // بنفرض اتجاه الصفحة "عرضي" تلقائياً لأنه مناسب لشكل الشهادة وبيخليها تتظبط في صفحة
+    // واحدة بس من غير ما تحتاج تغيّر إعداد "Layout" يدوياً في نافذة الطباعة
+    const styleTag = document.createElement('style');
+    styleTag.id = 'certLandscapeStyle';
+    styleTag.textContent = '@page { size: landscape; margin: 0.3in; }';
+    document.head.appendChild(styleTag);
+
     document.body.classList.add('print-certificate-only');
     window.print();
-    setTimeout(() => { document.body.classList.remove('print-certificate-only'); }, 500);
+    setTimeout(() => {
+        document.body.classList.remove('print-certificate-only');
+        const tag = document.getElementById('certLandscapeStyle');
+        if (tag) tag.remove();
+    }, 500);
 }
 
 function saveCertificateToArchive(evt) {
@@ -1752,12 +1910,12 @@ const quarterlyEvaluatorRoles = [
     { key: 'q_deputy1', label: 'نائب المدير (محمد يسري)' },
     { key: 'q_deputy2', label: 'نائب المدير (سعد محمد)' },
     { key: 'q_tl_current', label: 'رئيس الفريق الحالي' },
-    { key: 'q_stock_current', label: 'تيم ليدر المخزون الحالي' },
-    { key: 'q_special_current', label: 'تيم ليدر المتخصصة الحالي' },
-    { key: 'q_finance_current', label: 'تيم ليدر المالية الحالي' },
     { key: 'q_tl_previous', label: 'رئيس الفريق السابق' },
+    { key: 'q_stock_current', label: 'تيم ليدر المخزون الحالي' },
     { key: 'q_stock_previous', label: 'تيم ليدر المخزون السابق' },
+    { key: 'q_special_current', label: 'تيم ليدر المتخصصة الحالي' },
     { key: 'q_special_previous', label: 'تيم ليدر المتخصصة السابق' },
+    { key: 'q_finance_current', label: 'تيم ليدر المالية الحالي' },
     { key: 'q_finance_previous', label: 'تيم ليدر المالية السابق' }
 ];
 
@@ -2010,6 +2168,71 @@ function showQReportDetails(empId, period) {
     panel.innerHTML = html;
 }
 
+// ===== الإيجابيات والسلبيات المجمّعة لكل موظف (لصاحب الصلاحية الكاملة فقط) =====
+function initQFeedbackTab() {
+    if (!isFullAccessViewer()) {
+        document.getElementById('qfeedbackLocked').style.display = 'block';
+        document.getElementById('qfeedbackContent').style.display = 'none';
+        return;
+    }
+    document.getElementById('qfeedbackLocked').style.display = 'none';
+    document.getElementById('qfeedbackContent').style.display = 'block';
+
+    const periodSelect = document.getElementById('qFeedbackPeriodSelect');
+    const current = periodSelect.value;
+    periodSelect.innerHTML = '';
+    getQuarterlyPeriods().forEach(p => { let o = document.createElement('option'); o.value = p; o.textContent = p; periodSelect.appendChild(o); });
+    if (getQuarterlyPeriods().includes(current)) periodSelect.value = current;
+    periodSelect.onchange = renderQFeedback;
+
+    renderQFeedback();
+}
+
+function renderQFeedback() {
+    const period = document.getElementById('qFeedbackPeriodSelect').value;
+    const list = document.getElementById('qFeedbackList');
+
+    if (!period) {
+        list.innerHTML = '<div class="empty-state">لا توجد فترات مضافة بعد.</div>';
+        return;
+    }
+
+    const periodData = (monthlyArchive._quarterly && monthlyArchive._quarterly.entries && monthlyArchive._quarterly.entries[period]) || {};
+    let html = '';
+    let hasAnyEmployee = false;
+
+    baseEmployeesDataset.forEach(emp => {
+        const empData = periodData[emp.id];
+        if (!empData) return;
+
+        // اجمع كل جهة كتبت إيجابيات أو سلبيات لهذا الموظف
+        const feedbackRoles = quarterlyEvaluatorRoles.filter(r => {
+            const cell = empData[r.key];
+            return cell && (cell.pros || cell.cons);
+        });
+        if (feedbackRoles.length === 0) return;
+
+        hasAnyEmployee = true;
+        html += '<div class="evaluation-box" style="margin-bottom:20px;">' +
+            '<div class="box-title">' + emp.name + ' <span style="color:var(--mid); font-weight:600; font-size:13px;">(' + emp.id + ')</span></div>';
+
+        feedbackRoles.forEach(r => {
+            const cell = empData[r.key];
+            html += '<div class="history-criteria-block" style="margin-top:10px;">' +
+                '<strong>' + r.label + '</strong>' + (cell.evaluatorName ? ' (' + cell.evaluatorName + ')' : '') +
+                (cell.percentage ? ' — <span style="color:var(--primary); font-weight:900;">' + cell.percentage + '%</span>' : '') +
+                (cell.pros ? '<div style="margin-top:6px; color:var(--success);"><b>✓ إيجابيات:</b> ' + cell.pros + '</div>' : '') +
+                (cell.cons ? '<div style="margin-top:4px; color:var(--danger);"><b>✗ سلبيات:</b> ' + cell.cons + '</div>' : '') +
+                '</div>';
+        });
+
+        html += '</div>';
+    });
+
+    if (!hasAnyEmployee) html = '<div class="empty-state">لا توجد إيجابيات أو سلبيات مسجلة لأي موظف في هذه الفترة بعد.</div>';
+    list.innerHTML = html;
+}
+
 // ===== التقييم الرسمي (نسخة نموذج الـHR) — مدير الإدارة والنواب فقط =====
 const officialPersonalCriteria = [
     "الإلتزام ببروتوكول العمل (المظهر الشخصي- النظافة الشخصية)",
@@ -2045,9 +2268,19 @@ function initOfficialTab() {
     document.getElementById('officialContent').style.display = 'block';
 
     const empSelect = document.getElementById('officialEmployeeSelect');
+    const yearSelect = document.getElementById('officialYearSelect');
     if (!empSelect.options.length) {
         baseEmployeesDataset.forEach(e => { let o = document.createElement('option'); o.value = e.id; o.textContent = e.name + ' (' + e.id + ')'; empSelect.appendChild(o); });
         empSelect.onchange = loadOfficialEvaluation;
+
+        const nowYear = new Date().getFullYear();
+        for (let y = nowYear - 2; y <= nowYear + 1; y++) {
+            let o = document.createElement('option'); o.value = y; o.textContent = y;
+            if (y === nowYear) o.selected = true;
+            yearSelect.appendChild(o);
+        }
+        yearSelect.onchange = loadOfficialEvaluation;
+
         buildOfficialCriteriaForm();
         document.getElementById('officialDate').value = new Date().toISOString().slice(0, 10);
     }
@@ -2083,17 +2316,20 @@ function calculateOfficialTotal() {
 
 function loadOfficialEvaluation() {
     const empId = document.getElementById('officialEmployeeSelect').value;
+    const year = document.getElementById('officialYearSelect').value;
     const myRole = getViewerRole();
-    const rec = monthlyArchive._official && monthlyArchive._official[empId] && monthlyArchive._official[empId][myRole];
+    const rec = monthlyArchive._official && monthlyArchive._official[year] && monthlyArchive._official[year][empId] && monthlyArchive._official[year][empId][myRole];
 
     officialPersonalCriteria.forEach((t, i) => { const el = document.getElementById('op_' + i); if (el) el.value = (rec && rec.ratings && rec.ratings['op_' + i] !== undefined) ? rec.ratings['op_' + i] : 100; });
     officialPerformanceCriteria.forEach((t, i) => { const el = document.getElementById('oq_' + i); if (el) el.value = (rec && rec.ratings && rec.ratings['oq_' + i] !== undefined) ? rec.ratings['oq_' + i] : 100; });
     document.getElementById('officialEvaluatorTitle').value = rec ? (rec.evaluatorTitle || '') : '';
+    document.getElementById('officialDate').value = rec ? (rec.date || new Date().toISOString().slice(0, 10)) : new Date().toISOString().slice(0, 10);
     calculateOfficialTotal();
 }
 
 function saveOfficialEvaluation() {
     const empId = document.getElementById('officialEmployeeSelect').value;
+    const year = document.getElementById('officialYearSelect').value;
     const myRole = getViewerRole();
     if (myRole !== 'manager' && myRole !== 'deputy1' && myRole !== 'deputy2') {
         alert('⛔ غير مصرح لك بهذا التقييم.');
@@ -2111,6 +2347,7 @@ function saveOfficialEvaluation() {
     const formData = new URLSearchParams();
     formData.append('action', 'saveOfficial');
     formData.append('sheet', TARGET_SHEET_NAME);
+    formData.append('year', year);
     formData.append('employeeId', empId);
     formData.append('roleKey', myRole);
     formData.append('ratings', JSON.stringify(ratings));
@@ -2126,6 +2363,85 @@ function saveOfficialEvaluation() {
         alert('✅ تم حفظ التقييم الرسمي.');
         syncDataLive(false);
     }).catch(() => alert('⚠️ تعذر الاتصال بالسيرفر.'));
+}
+
+// حذف ذاتي: المقيّم بيحذف بس تقييماته هو (كل الموظفين) لنفس الفترة الحالية — بدون كلمة سر
+// لأنه بيحذف بياناته هو بس مش بيانات حد تاني
+function deleteMyQuarterlyEntries() {
+    if (!qCurrentPeriod || !qCurrentRole) { alert('مفيش جلسة دخول حالية.'); return; }
+    if (!confirm('هل تريد حذف كل تقييماتك لفترة "' + qCurrentPeriod + '" نهائياً؟')) return;
+
+    const formData = new URLSearchParams();
+    formData.append('action', 'deleteMyQuarterly');
+    formData.append('sheet', TARGET_SHEET_NAME);
+    formData.append('period', qCurrentPeriod);
+    formData.append('roleKey', qCurrentRole);
+
+    fetch(CLOUD_STORAGE_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: formData.toString()
+    }).then(() => {
+        alert('✅ تم حذف تقييماتك لهذه الفترة.');
+        syncDataLive(false);
+        renderQEntryTable();
+    }).catch(() => alert('⚠️ تعذر الاتصال بالسيرفر.'));
+}
+
+// حذف إداري: بيمسح بيانات فترة ربع سنوية بالكامل (كل المقيّمين) — محمي بكلمة سر الفرمتة
+function wipeQuarterlyPeriod() {
+    const period = document.getElementById('qReportPeriodSelect').value;
+    if (!period) { alert('اختار فترة أولاً.'); return; }
+
+    const enteredPassword = prompt('🔒 من فضلك أدخل كلمة سر الفرمتة الشاملة للتأكيد:');
+    if (enteredPassword === null || enteredPassword.trim() === '') { alert('تم الإلغاء.'); return; }
+    if (!confirm('هل أنت متأكد من حذف كل بيانات فترة "' + period + '" نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.')) return;
+
+    const script = document.createElement('script');
+    const cbName = '__wipeQPeriod_' + Date.now();
+    window[cbName] = function (response) {
+        delete window[cbName];
+        if (!response || response.status === 'unauthorized') {
+            alert('⛔ كلمة السر غير صحيحة. لم يتم حذف أي شيء.');
+            return;
+        }
+        applyServerArchive(response);
+        initQReportTab();
+        alert('✅ تم حذف بيانات هذه الفترة نهائياً.');
+    };
+    script.src = CLOUD_STORAGE_URL + "?action=wipeQuarterlyPeriod&period=" + encodeURIComponent(period) +
+        "&password=" + encodeURIComponent(enteredPassword) + "&callback=" + cbName;
+    script.onerror = function () { alert('⚠️ تعذر الاتصال بالسيرفر.'); };
+    document.body.appendChild(script);
+}
+
+// حذف إداري: بيمسح التقييم الرسمي لموظف معيّن، سنة معيّنة، من المقيّم الحالي — محمي بكلمة سر
+function wipeOfficialEvaluation() {
+    const empId = document.getElementById('officialEmployeeSelect').value;
+    const year = document.getElementById('officialYearSelect').value;
+    const myRole = getViewerRole();
+
+    const enteredPassword = prompt('🔒 من فضلك أدخل كلمة سر الفرمتة الشاملة للتأكيد:');
+    if (enteredPassword === null || enteredPassword.trim() === '') { alert('تم الإلغاء.'); return; }
+    if (!confirm('هل أنت متأكد من حذف هذا التقييم الرسمي نهائياً؟')) return;
+
+    const script = document.createElement('script');
+    const cbName = '__wipeOfficial_' + Date.now();
+    window[cbName] = function (response) {
+        delete window[cbName];
+        if (!response || response.status === 'unauthorized') {
+            alert('⛔ كلمة السر غير صحيحة. لم يتم حذف أي شيء.');
+            return;
+        }
+        applyServerArchive(response);
+        loadOfficialEvaluation();
+        alert('✅ تم حذف التقييم.');
+    };
+    script.src = CLOUD_STORAGE_URL + "?action=wipeOfficial&year=" + encodeURIComponent(year) +
+        "&employeeId=" + encodeURIComponent(empId) + "&roleKey=" + encodeURIComponent(myRole) +
+        "&password=" + encodeURIComponent(enteredPassword) + "&callback=" + cbName;
+    script.onerror = function () { alert('⚠️ تعذر الاتصال بالسيرفر.'); };
+    document.body.appendChild(script);
 }
 </script>
 </body>
