@@ -74,8 +74,8 @@
         
         .evaluation-box { background: var(--bg-light); border: 1px solid var(--border); padding: 25px; border-radius: 12px; margin-bottom: 35px; }
         .box-title { font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 15px; border-right: 4px solid var(--primary); padding-right: 10px; }
-        .grid-inputs { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin-bottom: 25px; }
-        .form-group { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 8px; }
+        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; align-items: end; margin-bottom: 25px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
         .form-group.score-group { flex: 0 0 160px; min-width: 160px; }
         .form-group label { font-weight: 700; color: var(--mid); font-size: 14px; }
         .form-group select, .form-group input { padding: 12px; border: 1px solid var(--input-border); border-radius: 8px; font-size: 14px; font-weight: 600; background: var(--input-bg); color: var(--text-main); outline: none; }
@@ -169,7 +169,10 @@
             body.print-certificate-only .cert-paragraph { font-size: 11px !important; margin-top: 6px !important; }
             body.print-certificate-only .cert-right { padding: 16px 14px 12px !important; }
             body.print-certificate-only .cert-photo-frame { width: 150px !important; height: 150px !important; }
-            body.print-certificate-only .cert-ring-badge { width: 100px !important; height: 100px !important; margin-top: -24px !important; }
+            body.print-certificate-only .cert-ring-badge { width: 100px !important; height: 100px !important; margin-top: -24px !important; padding: 4px !important; box-sizing: border-box !important; }
+            body.print-certificate-only .cert-ring-badge .star { font-size: 12px !important; margin-bottom: 1px !important; }
+            body.print-certificate-only .cert-ring-badge .badge-title { font-size: 9px !important; line-height: 1.15 !important; }
+            body.print-certificate-only .cert-ring-badge .badge-month { font-size: 7px !important; margin-top: 2px !important; }
             @page { margin: 0.4in; }
         }
         /* ===== تبويب شهادة الفائز وأرشيف الفائزين ===== */
@@ -544,8 +547,17 @@
                     <label>الفترة</label>
                     <select id="qFeedbackPeriodSelect"></select>
                 </div>
+                <div class="cert-field">
+                    <label>تصفية حسب المقيّم</label>
+                    <select id="qFeedbackEvaluatorFilter"></select>
+                </div>
             </div>
-            <div id="qFeedbackList" style="margin-top:20px;"></div>
+            <div class="table-container" style="margin-top:20px;">
+                <table>
+                    <thead><tr><th>الموظف</th><th>جهة التقييم</th><th>المقيّم</th><th>النسبة</th><th>إيجابيات</th><th>سلبيات</th></tr></thead>
+                    <tbody id="qFeedbackTableBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -569,6 +581,10 @@
                     <div class="form-group score-group">
                         <label>الدرجة الإجمالية</label>
                         <input type="text" id="officialTotalScore" readonly value="0%" style="color:var(--primary); text-align:center; font-weight:900;">
+                    </div>
+                    <div class="form-group score-group">
+                        <label>التقدير</label>
+                        <input type="text" id="officialGradeLabel" readonly value="—" style="color:var(--primary); text-align:center; font-weight:900;">
                     </div>
                 </div>
 
@@ -1160,8 +1176,11 @@ function onCloudSaveSuccess(response) {
 function onCloudFetchSuccess(response) {
     applyServerArchive(response);
     renderAndSortDashboard(); renderHistorySidebar(); refreshEvaluatorHeaders();
-    refreshEmployeeSelectByRemaining();
-    loadSavedInputsIfExist();
+    // في وضع "نقل تقييم" لازم القيم المحمّلة على الشاشة تفضل زي ما هي، مش تترجع من السيرفر
+    if (!editMoveActive) {
+        refreshEmployeeSelectByRemaining();
+        loadSavedInputsIfExist();
+    }
     const btn = document.querySelector('.btn-refresh');
     if (btn) btn.textContent = "🔄 تحديث ومزامنة فورية لكل الأجهزة";
 }
@@ -2115,7 +2134,7 @@ function renderQReport() {
 
     let headHtml = '<tr><th>كود</th><th>الاسم</th>';
     quarterlyEvaluatorRoles.forEach(r => { headHtml += '<th style="font-size:10px;">' + r.label + '</th>'; });
-    headHtml += '<th>المتوسط</th></tr>';
+    headHtml += '<th>المتوسط</th><th>التقدير</th></tr>';
     head.innerHTML = headHtml;
 
     const periodData = (monthlyArchive._quarterly && monthlyArchive._quarterly.entries && monthlyArchive._quarterly.entries[period]) || {};
@@ -2138,6 +2157,7 @@ function renderQReport() {
 
         const avg = count > 0 ? (total / count).toFixed(1) : '-';
         rowHtml += '<td class="final-avg">' + avg + (count > 0 ? '%' : '') + '</td>';
+        rowHtml += '<td>' + (count > 0 ? getGradeLabel(avg) : '-') + '</td>';
 
         const tr = document.createElement('tr');
         tr.innerHTML = rowHtml;
@@ -2183,54 +2203,75 @@ function initQFeedbackTab() {
     periodSelect.innerHTML = '';
     getQuarterlyPeriods().forEach(p => { let o = document.createElement('option'); o.value = p; o.textContent = p; periodSelect.appendChild(o); });
     if (getQuarterlyPeriods().includes(current)) periodSelect.value = current;
-    periodSelect.onchange = renderQFeedback;
+    periodSelect.onchange = function () { renderQFeedback(true); };
 
-    renderQFeedback();
+    renderQFeedback(true);
 }
 
-function renderQFeedback() {
-    const period = document.getElementById('qFeedbackPeriodSelect').value;
-    const list = document.getElementById('qFeedbackList');
-
-    if (!period) {
-        list.innerHTML = '<div class="empty-state">لا توجد فترات مضافة بعد.</div>';
-        return;
-    }
-
+// بنبني قائمة كل الصفوف (موظف + جهة + مقيّم) اللي عندها إيجابيات أو سلبيات لفترة معينة
+function buildQFeedbackRows(period) {
     const periodData = (monthlyArchive._quarterly && monthlyArchive._quarterly.entries && monthlyArchive._quarterly.entries[period]) || {};
-    let html = '';
-    let hasAnyEmployee = false;
+    const rows = [];
 
     baseEmployeesDataset.forEach(emp => {
         const empData = periodData[emp.id];
         if (!empData) return;
 
-        // اجمع كل جهة كتبت إيجابيات أو سلبيات لهذا الموظف
-        const feedbackRoles = quarterlyEvaluatorRoles.filter(r => {
+        quarterlyEvaluatorRoles.forEach(r => {
             const cell = empData[r.key];
-            return cell && (cell.pros || cell.cons);
+            if (!cell || (!cell.pros && !cell.cons)) return;
+            rows.push({
+                empName: emp.name, empId: emp.id,
+                roleLabel: r.label, evaluatorName: cell.evaluatorName || '—',
+                percentage: cell.percentage || '-', pros: cell.pros || '', cons: cell.cons || ''
+            });
         });
-        if (feedbackRoles.length === 0) return;
-
-        hasAnyEmployee = true;
-        html += '<div class="evaluation-box" style="margin-bottom:20px;">' +
-            '<div class="box-title">' + emp.name + ' <span style="color:var(--mid); font-weight:600; font-size:13px;">(' + emp.id + ')</span></div>';
-
-        feedbackRoles.forEach(r => {
-            const cell = empData[r.key];
-            html += '<div class="history-criteria-block" style="margin-top:10px;">' +
-                '<strong>' + r.label + '</strong>' + (cell.evaluatorName ? ' (' + cell.evaluatorName + ')' : '') +
-                (cell.percentage ? ' — <span style="color:var(--primary); font-weight:900;">' + cell.percentage + '%</span>' : '') +
-                (cell.pros ? '<div style="margin-top:6px; color:var(--success);"><b>✓ إيجابيات:</b> ' + cell.pros + '</div>' : '') +
-                (cell.cons ? '<div style="margin-top:4px; color:var(--danger);"><b>✗ سلبيات:</b> ' + cell.cons + '</div>' : '') +
-                '</div>';
-        });
-
-        html += '</div>';
     });
 
-    if (!hasAnyEmployee) html = '<div class="empty-state">لا توجد إيجابيات أو سلبيات مسجلة لأي موظف في هذه الفترة بعد.</div>';
-    list.innerHTML = html;
+    return rows;
+}
+
+// rebuildFilter=true تعني أعد بناء قائمة أسماء المقيّمين (مثلاً أول فتح للتبويب أو تغيير الفترة)
+function renderQFeedback(rebuildFilter) {
+    const period = document.getElementById('qFeedbackPeriodSelect').value;
+    const body = document.getElementById('qFeedbackTableBody');
+    const filterSelect = document.getElementById('qFeedbackEvaluatorFilter');
+
+    if (!period) {
+        body.innerHTML = '<tr><td class="empty-state" colspan="6">لا توجد فترات مضافة بعد.</td></tr>';
+        filterSelect.innerHTML = '';
+        return;
+    }
+
+    const allRows = buildQFeedbackRows(period);
+
+    if (rebuildFilter) {
+        const uniqueNames = [...new Set(allRows.map(r => r.evaluatorName))].sort();
+        const currentFilter = filterSelect.value;
+        filterSelect.innerHTML = '<option value="">كل المقيّمين</option>';
+        uniqueNames.forEach(n => { let o = document.createElement('option'); o.value = n; o.textContent = n; filterSelect.appendChild(o); });
+        if (uniqueNames.includes(currentFilter)) filterSelect.value = currentFilter;
+        filterSelect.onchange = function () { renderQFeedback(false); };
+    }
+
+    const selectedEvaluator = filterSelect.value;
+    const rows = selectedEvaluator ? allRows.filter(r => r.evaluatorName === selectedEvaluator) : allRows;
+
+    if (rows.length === 0) {
+        body.innerHTML = '<tr><td class="empty-state" colspan="6">لا توجد إيجابيات أو سلبيات مسجلة بهذه الفلترة بعد.</td></tr>';
+        return;
+    }
+
+    body.innerHTML = rows.map(r =>
+        '<tr>' +
+            '<td class="emp-name">' + r.empName + ' <span style="color:var(--mid); font-size:11px;">(' + r.empId + ')</span></td>' +
+            '<td style="font-size:12px;">' + r.roleLabel + '</td>' +
+            '<td>' + r.evaluatorName + '</td>' +
+            '<td>' + (r.percentage !== '-' ? r.percentage + '%' : '-') + '</td>' +
+            '<td style="color:var(--success); text-align:right; font-size:12px;">' + (r.pros || '-') + '</td>' +
+            '<td style="color:var(--danger); text-align:right; font-size:12px;">' + (r.cons || '-') + '</td>' +
+        '</tr>'
+    ).join('');
 }
 
 // ===== التقييم الرسمي (نسخة نموذج الـHR) — مدير الإدارة والنواب فقط =====
@@ -2305,12 +2346,23 @@ function buildOfficialCriterionRow(id, text) {
     return row;
 }
 
+// نسب التقدير المعتمدة: 95%+ ممتاز | 85-94% جيد جداً | 76-84% جيد | أقل من 76% مقبول
+function getGradeLabel(pct) {
+    pct = parseFloat(pct);
+    if (pct >= 95) return 'ممتاز';
+    if (pct >= 85) return 'جيد جداً';
+    if (pct >= 76) return 'جيد';
+    return 'مقبول';
+}
+
 function calculateOfficialTotal() {
     let total = 0, count = 0;
     officialPersonalCriteria.forEach((t, i) => { const el = document.getElementById('op_' + i); if (el) { total += parseFloat(el.value); count++; } });
     officialPerformanceCriteria.forEach((t, i) => { const el = document.getElementById('oq_' + i); if (el) { total += parseFloat(el.value); count++; } });
     const avg = count > 0 ? (total / count).toFixed(1) : 0;
     document.getElementById('officialTotalScore').value = avg + '%';
+    const gradeField = document.getElementById('officialGradeLabel');
+    if (gradeField) gradeField.value = count > 0 ? getGradeLabel(avg) : '—';
     return avg;
 }
 
