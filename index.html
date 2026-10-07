@@ -302,10 +302,11 @@
         <button id="tab-btn-history" class="tab-btn" onclick="switchTab('history')">🔍 استرجاع وفحص التقييمات التفصيلية</button>
         <button id="tab-btn-certificate" class="tab-btn" onclick="switchTab('certificate')">🏅 شهادة الفائز</button>
         <button id="tab-btn-winners" class="tab-btn" onclick="switchTab('winners')">📜 أرشيف الفائزين</button>
-        <button id="tab-btn-qentry" class="tab-btn" onclick="switchTab('qentry')">📋 التقييم الربع سنوي</button>
+        <button id="tab-btn-official" class="tab-btn" onclick="switchTab('official')">🏛️ التقييم الرسمي</button>
+        <button id="tab-btn-qentry" class="tab-btn" onclick="switchTab('qentry')">📋 الإيجابيات والسلبيات</button>
         <button id="tab-btn-qreport" class="tab-btn" onclick="switchTab('qreport')">📊 التقرير الربع سنوي المجمّع</button>
         <button id="tab-btn-qfeedback" class="tab-btn" onclick="switchTab('qfeedback')">💬 الإيجابيات والسلبيات المجمّعة</button>
-        <button id="tab-btn-official" class="tab-btn" onclick="switchTab('official')">🏛️ التقييم الرسمي</button>
+        <button id="tab-btn-annual" class="tab-btn" onclick="switchTab('annual')">📈 التقدير السنوي النهائي</button>
     </div>
 
     <div id="page-evaluate" class="page active">
@@ -471,7 +472,7 @@
     </div>
 
     <div id="page-qentry" class="page">
-        <div class="table-title">📋 التقييم الربع سنوي — إدخال فردي</div>
+        <div class="table-title">📋 الإيجابيات والسلبيات — إدخال فردي</div>
 
         <div id="qentryLogin" class="evaluation-box">
             <div class="box-title">تسجيل الدخول لهذا التقييم</div>
@@ -500,7 +501,7 @@
             <div class="cert-readout" id="qEntryReadout"></div>
             <div class="table-container">
                 <table>
-                    <thead><tr><th style="width:60px;">كود</th><th>اسم الموظف</th><th style="width:100px;">النسبة %</th><th>إيجابيات</th><th>سلبيات</th></tr></thead>
+                    <thead><tr><th style="width:60px;">كود</th><th>اسم الموظف</th><th>إيجابيات</th><th>سلبيات</th></tr></thead>
                     <tbody id="qEntryTableBody"></tbody>
                 </table>
             </div>
@@ -561,28 +562,67 @@
         </div>
     </div>
 
-    <div id="page-official" class="page">
-        <div id="officialLocked" class="access-locked" style="display:none;">
-            🔒 هذا التبويب مخصص فقط لمدير الإدارة والنواب.<br><br>
+    <div id="page-annual" class="page">
+        <div id="annualLocked" class="access-locked" style="display:none;">
+            🔒 هذا التبويب لأصحاب الصلاحية الكاملة فقط.<br><br>
             دوس "👤 تغيير الهوية" وسجّل هويتك أولاً.
         </div>
-        <div id="officialContent" style="display:none;">
+        <div id="annualContent" style="display:none;">
+            <div class="table-title">📈 التقدير السنوي النهائي</div>
+            <div class="cert-controls-row" style="margin-top:15px;">
+                <div class="cert-field">
+                    <label>السنة</label>
+                    <select id="annualYearSelect"></select>
+                </div>
+            </div>
+            <div style="font-size:12px; color:var(--mid); margin:8px 0 14px;" id="annualPeriodsUsedNote"></div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>الكود</th><th>الاسم</th><th>المتوسط السنوي</th><th>التقدير النهائي</th></tr></thead>
+                    <tbody id="annualTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-official" class="page">
+        <div id="officialLoginBox" class="evaluation-box">
+            <div class="box-title">تسجيل الدخول لهذا التقييم</div>
+            <div class="grid-inputs">
+                <div class="form-group">
+                    <label>الفترة</label>
+                    <select id="offPeriodSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label>جهتك (دورك الوظيفي)</label>
+                    <select id="offRoleSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label>اسمك</label>
+                    <select id="offNameSelect"></select>
+                </div>
+            </div>
+            <div id="offAddPeriodBox" style="display:none; margin-top:10px; gap:10px;">
+                <input type="text" id="offNewPeriodName" placeholder="اسم فترة جديدة، مثلاً: الفترة الثالثة 2026" style="flex:1; padding:10px; border:1px solid var(--input-border); border-radius:8px; background:var(--input-bg); color:var(--text-main);">
+                <button class="action-btn btn-refresh" onclick="addQuarterlyPeriod()">➕ إضافة فترة جديدة</button>
+            </div>
+            <button class="btn-save" onclick="enterOfficialEntry()">دخول</button>
+        </div>
+
+        <div id="officialContent" style="display:none; margin-top:20px;">
             <div class="evaluation-box">
+                <div class="cert-readout" id="officialReadout"></div>
                 <div class="box-title">دليل التقييم السنوي — مراجع إدارة المراجعة</div>
                 <div class="grid-inputs">
-                    <div class="form-group">
-                        <label>السنة</label>
-                        <select id="officialYearSelect"></select>
-                    </div>
                     <div class="form-group">
                         <label>اسم الموظف</label>
                         <select id="officialEmployeeSelect"></select>
                     </div>
-                    <div class="form-group score-group">
+                    <div class="form-group score-group" id="officialScoreBox" style="display:none;">
                         <label>الدرجة الإجمالية</label>
                         <input type="text" id="officialTotalScore" readonly value="0%" style="color:var(--primary); text-align:center; font-weight:900;">
                     </div>
-                    <div class="form-group score-group">
+                    <div class="form-group score-group" id="officialGradeBox" style="display:none;">
                         <label>التقدير</label>
                         <input type="text" id="officialGradeLabel" readonly value="—" style="color:var(--primary); text-align:center; font-weight:900;">
                     </div>
@@ -596,10 +636,6 @@
 
                 <div class="grid-inputs" style="margin-top:15px;">
                     <div class="form-group">
-                        <label>وظيفة المقيم</label>
-                        <input type="text" id="officialEvaluatorTitle" placeholder="مثلاً: مدير الإدارة">
-                    </div>
-                    <div class="form-group">
                         <label>التاريخ</label>
                         <input type="date" id="officialDate">
                     </div>
@@ -607,7 +643,7 @@
 
                 <div class="cert-btn-row">
                     <button class="btn-save" style="flex:1;" onclick="saveOfficialEvaluation()">حفظ التقييم الرسمي</button>
-                    <button class="action-btn btn-dark-danger" onclick="wipeOfficialEvaluation()">🗑️ حذف هذا التقييم (بكلمة سر)</button>
+                    <button class="action-btn btn-danger" onclick="deleteMyOfficialEvaluation()">🗑️ حذف تقييمي لهذا الموظف</button>
                 </div>
             </div>
         </div>
@@ -788,11 +824,32 @@ function onIdentityVerifyResult(response) {
     _pendingIdentityRole = null;
 }
 
+// التابات المسموحة لغير أصحاب الصلاحية الكاملة: رصد تقييم جديد، استرجاع وفحص التقييمات،
+// التقييم الرسمي، الإيجابيات والسلبيات. الباقي (لوحة الصدارة، الشهادة، الأرشيف، التقرير
+// المجمّع، الإيجابيات المجمّعة، التقدير السنوي) لمدير الإدارة والنواب بس.
+function applyTabVisibility() {
+    const restrictedTabs = ['tab-btn-leaderboard', 'tab-btn-certificate', 'tab-btn-winners', 'tab-btn-qreport', 'tab-btn-qfeedback', 'tab-btn-annual'];
+    const full = isFullAccessViewer();
+    restrictedTabs.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.style.display = full ? '' : 'none';
+    });
+    // لو كان واقف على تاب مقفول وفقد الصلاحية، رجّعه لصفحة التقييم الافتراضية
+    if (!full) {
+        const activePage = document.querySelector('.page.active');
+        const restrictedPageIds = ['page-leaderboard', 'page-certificate', 'page-winners', 'page-qreport', 'page-qfeedback', 'page-annual'];
+        if (activePage && restrictedPageIds.includes(activePage.id)) {
+            switchTab('evaluate');
+        }
+    }
+}
+
 function setViewerIdentity(role, fullAccess) {
     localStorage.setItem('GomlaAudit_ViewerRole', role);
     localStorage.setItem('GomlaAudit_ViewerFullAccess', fullAccess ? '1' : '0');
     const overlay = document.getElementById('viewerIdentityOverlay');
     if (overlay) overlay.style.display = 'none';
+    applyTabVisibility();
     renderAndSortDashboard();
     renderHistorySidebar();
 
@@ -876,6 +933,7 @@ function initApp() {
     refreshEmployeeSelectByRemaining();
     loadSavedInputsIfExist();
     ensureViewerIdentity();
+    applyTabVisibility();
     syncDataLive(false);
 
     // مزامنة تلقائية كل 15 ثانية عشان كل الأجهزة تتحدث لبعض من غير تدخل يدوي
@@ -1443,6 +1501,7 @@ function switchTab(id) {
     if(id === 'qreport') { initQReportTab(); }
     if(id === 'official') { initOfficialTab(); }
     if(id === 'qfeedback') { initQFeedbackTab(); }
+    if(id === 'annual') { initAnnualTab(); }
 }
 
 function toggleTheme() { isDarkMode = !isDarkMode; document.documentElement.setAttribute('data-theme', isDarkMode?'dark':'light'); }
@@ -2055,7 +2114,6 @@ function renderQEntryTable() {
         tr.innerHTML =
             '<td>' + emp.id + '</td>' +
             '<td class="emp-name">' + emp.name + '</td>' +
-            '<td><input type="number" min="0" max="100" value="' + (rec.percentage || '') + '" data-emp="' + emp.id + '" class="qPercentInput" style="width:70px; text-align:center; padding:6px; border:1px solid var(--input-border); border-radius:4px; background:var(--input-bg); color:var(--text-main);"></td>' +
             '<td><textarea data-emp="' + emp.id + '" class="qProsInput" rows="2" style="width:100%; padding:6px; border:1px solid var(--input-border); border-radius:4px; background:var(--input-bg); color:var(--text-main);">' + (rec.pros || '') + '</textarea></td>' +
             '<td><textarea data-emp="' + emp.id + '" class="qConsInput" rows="2" style="width:100%; padding:6px; border:1px solid var(--input-border); border-radius:4px; background:var(--input-bg); color:var(--text-main);">' + (rec.cons || '') + '</textarea></td>';
         body.appendChild(tr);
@@ -2065,18 +2123,25 @@ function renderQEntryTable() {
 function logoutQuarterly() {
     localStorage.removeItem('GomlaQuarterly_Role');
     localStorage.removeItem('GomlaQuarterly_Name');
-    document.getElementById('qentryTableWrap').style.display = 'none';
+    qCurrentRole = ''; qCurrentName = ''; qCurrentPeriod = '';
+
+    const entryWrap = document.getElementById('qentryTableWrap');
+    if (entryWrap) entryWrap.style.display = 'none';
+
+    const officialLogin = document.getElementById('officialLoginBox');
+    const officialContent = document.getElementById('officialContent');
+    if (officialLogin) officialLogin.style.display = 'block';
+    if (officialContent) officialContent.style.display = 'none';
 }
 
 function saveQuarterlyEntries() {
     const entries = [];
-    document.querySelectorAll('.qPercentInput').forEach(input => {
-        const empId = input.dataset.emp;
-        const pct = parseFloat(input.value) || 0;
-        const pros = (document.querySelector('.qProsInput[data-emp="' + empId + '"]') || {}).value || '';
+    document.querySelectorAll('.qProsInput').forEach(prosInput => {
+        const empId = prosInput.dataset.emp;
+        const pros = prosInput.value || '';
         const cons = (document.querySelector('.qConsInput[data-emp="' + empId + '"]') || {}).value || '';
-        if (pct > 0 || pros || cons) {
-            entries.push({ employeeId: empId, percentage: pct, pros: pros, cons: cons });
+        if (pros || cons) {
+            entries.push({ employeeId: empId, pros: pros, cons: cons });
         }
     });
 
@@ -2137,7 +2202,8 @@ function renderQReport() {
     headHtml += '<th>المتوسط</th><th>التقدير</th></tr>';
     head.innerHTML = headHtml;
 
-    const periodData = (monthlyArchive._quarterly && monthlyArchive._quarterly.entries && monthlyArchive._quarterly.entries[period]) || {};
+    // النسب بقت مصدرها صفحة "التقييم الرسمي" (مش صفحة الإيجابيات والسلبيات اللي بقت للنصوص بس)
+    const periodData = (monthlyArchive._official && monthlyArchive._official[period]) || {};
 
     body.innerHTML = '';
     baseEmployeesDataset.forEach(emp => {
@@ -2167,20 +2233,23 @@ function renderQReport() {
 
 function showQReportDetails(empId, period) {
     const emp = baseEmployeesDataset.find(e => String(e.id) === String(empId));
-    const empData = (monthlyArchive._quarterly && monthlyArchive._quarterly.entries && monthlyArchive._quarterly.entries[period] && monthlyArchive._quarterly.entries[period][empId]) || {};
+    const officialData = (monthlyArchive._official && monthlyArchive._official[period] && monthlyArchive._official[period][empId]) || {};
+    const feedbackData = (monthlyArchive._quarterly && monthlyArchive._quarterly.entries && monthlyArchive._quarterly.entries[period] && monthlyArchive._quarterly.entries[period][empId]) || {};
     const panel = document.getElementById('qReportDetailsPanel');
 
     let html = '<div class="table-title" style="font-size:16px;">تفاصيل تقييم: ' + (emp ? emp.name : empId) + ' — ' + period + '</div>';
     let hasAny = false;
 
     quarterlyEvaluatorRoles.forEach(r => {
-        const cell = empData[r.key];
-        if (!cell) return;
+        const scoreCell = officialData[r.key];
+        const feedbackCell = feedbackData[r.key];
+        if (!scoreCell && !feedbackCell) return;
         hasAny = true;
         html += '<div class="history-criteria-block">' +
-            '<strong>' + r.label + '</strong> (' + (cell.evaluatorName || '') + ') — <span style="color:var(--primary); font-weight:900;">' + cell.percentage + '%</span>' +
-            (cell.pros ? '<div style="margin-top:6px;"><b>إيجابيات:</b> ' + cell.pros + '</div>' : '') +
-            (cell.cons ? '<div style="margin-top:4px;"><b>سلبيات:</b> ' + cell.cons + '</div>' : '') +
+            '<strong>' + r.label + '</strong>' +
+            (scoreCell ? ' (' + (scoreCell.evaluatorTitle || '') + ') — <span style="color:var(--primary); font-weight:900;">' + scoreCell.percentage + '%</span>' : '') +
+            (feedbackCell && feedbackCell.pros ? '<div style="margin-top:6px;"><b>إيجابيات:</b> ' + feedbackCell.pros + '</div>' : '') +
+            (feedbackCell && feedbackCell.cons ? '<div style="margin-top:4px;"><b>سلبيات:</b> ' + feedbackCell.cons + '</div>' : '') +
             '</div>';
     });
 
@@ -2274,6 +2343,87 @@ function renderQFeedback(rebuildFilter) {
     ).join('');
 }
 
+// ===== التقدير السنوي النهائي (تجميع 4 فترات لكل سنة) — لصاحب الصلاحية الكاملة فقط =====
+function extractYearFromPeriod(period) {
+    const match = period.match(/(\d{4})\s*$/);
+    return match ? match[1] : null;
+}
+
+function getYearsFromPeriods() {
+    const years = new Set();
+    getQuarterlyPeriods().forEach(p => {
+        const y = extractYearFromPeriod(p);
+        if (y) years.add(y);
+    });
+    return [...years].sort();
+}
+
+// نفس حساب المتوسط المستخدم في صفحة التقرير المجمّع، لموظف واحد في فترة واحدة
+function computePeriodAverageForEmployee(period, empId) {
+    const periodData = (monthlyArchive._official && monthlyArchive._official[period]) || {};
+    const empData = periodData[empId] || {};
+    let total = 0, count = 0;
+    quarterlyEvaluatorRoles.forEach(r => {
+        const cell = empData[r.key];
+        if (cell && cell.percentage > 0) { total += cell.percentage; count++; }
+    });
+    return count > 0 ? (total / count) : null;
+}
+
+function initAnnualTab() {
+    if (!isFullAccessViewer()) {
+        document.getElementById('annualLocked').style.display = 'block';
+        document.getElementById('annualContent').style.display = 'none';
+        return;
+    }
+    document.getElementById('annualLocked').style.display = 'none';
+    document.getElementById('annualContent').style.display = 'block';
+
+    const yearSelect = document.getElementById('annualYearSelect');
+    const current = yearSelect.value;
+    yearSelect.innerHTML = '';
+    const years = getYearsFromPeriods();
+    years.forEach(y => { let o = document.createElement('option'); o.value = y; o.textContent = y; yearSelect.appendChild(o); });
+    if (years.includes(current)) yearSelect.value = current;
+    yearSelect.onchange = renderAnnual;
+
+    renderAnnual();
+}
+
+function renderAnnual() {
+    const year = document.getElementById('annualYearSelect').value;
+    const body = document.getElementById('annualTableBody');
+    const note = document.getElementById('annualPeriodsUsedNote');
+
+    if (!year) {
+        body.innerHTML = '<tr><td class="empty-state" colspan="4">لا توجد فترات مضافة بعد.</td></tr>';
+        note.textContent = '';
+        return;
+    }
+
+    const periodsThisYear = getQuarterlyPeriods().filter(p => extractYearFromPeriod(p) === year);
+    note.textContent = 'الفترات المحسوبة لسنة ' + year + ': ' + (periodsThisYear.length > 0 ? periodsThisYear.join('، ') : 'لا توجد فترات لهذه السنة بعد');
+
+    const rows = baseEmployeesDataset.map(emp => {
+        const periodAverages = periodsThisYear
+            .map(p => computePeriodAverageForEmployee(p, emp.id))
+            .filter(v => v !== null);
+        const finalAvg = periodAverages.length > 0 ? (periodAverages.reduce((a, b) => a + b, 0) / periodAverages.length) : null;
+        return { emp, finalAvg, periodsCount: periodAverages.length };
+    });
+
+    rows.sort((a, b) => (b.finalAvg || 0) - (a.finalAvg || 0));
+
+    body.innerHTML = rows.map(r =>
+        '<tr>' +
+            '<td>' + r.emp.id + '</td>' +
+            '<td class="emp-name">' + r.emp.name + '</td>' +
+            '<td class="final-avg">' + (r.finalAvg !== null ? r.finalAvg.toFixed(2) + '%' : '-') + '</td>' +
+            '<td>' + (r.finalAvg !== null ? getGradeLabel(r.finalAvg) : '-') + '</td>' +
+        '</tr>'
+    ).join('');
+}
+
 // ===== التقييم الرسمي (نسخة نموذج الـHR) — مدير الإدارة والنواب فقط =====
 const officialPersonalCriteria = [
     "الإلتزام ببروتوكول العمل (المظهر الشخصي- النظافة الشخصية)",
@@ -2300,31 +2450,83 @@ const officialRatingScale = [
 ];
 
 function initOfficialTab() {
-    if (!isFullAccessViewer()) {
-        document.getElementById('officialLocked').style.display = 'block';
-        document.getElementById('officialContent').style.display = 'none';
-        return;
+    // بنستخدم نفس تسجيل الدخول بتاع صفحة "الإيجابيات والسلبيات" (نفس الفترة/الدور/الاسم)
+    const periodSelect = document.getElementById('offPeriodSelect');
+    const periods = getQuarterlyPeriods();
+    periodSelect.innerHTML = '';
+    if (periods.length === 0) {
+        let o = document.createElement('option'); o.value = ''; o.textContent = 'لا توجد فترات مضافة بعد';
+        periodSelect.appendChild(o);
+    } else {
+        periods.forEach(p => { let o = document.createElement('option'); o.value = p; o.textContent = p; periodSelect.appendChild(o); });
     }
-    document.getElementById('officialLocked').style.display = 'none';
-    document.getElementById('officialContent').style.display = 'block';
+
+    if (isFullAccessViewer()) {
+        document.getElementById('offAddPeriodBox').style.display = 'flex';
+    }
+
+    const roleSelect = document.getElementById('offRoleSelect');
+    if (!roleSelect.options.length) {
+        quarterlyEvaluatorRoles.forEach(r => { let o = document.createElement('option'); o.value = r.key; o.textContent = r.label; roleSelect.appendChild(o); });
+    }
+    const nameSelect = document.getElementById('offNameSelect');
+    if (!nameSelect.options.length) {
+        baseEmployeesDataset.forEach(e => { let o = document.createElement('option'); o.value = e.name; o.textContent = e.name; nameSelect.appendChild(o); });
+        ['محمد مصطفي', 'محمد يسري', 'سعد محمد'].forEach(n => {
+            let o = document.createElement('option'); o.value = n; o.textContent = n + ' (الإدارة العليا)'; nameSelect.appendChild(o);
+        });
+    }
 
     const empSelect = document.getElementById('officialEmployeeSelect');
-    const yearSelect = document.getElementById('officialYearSelect');
     if (!empSelect.options.length) {
         baseEmployeesDataset.forEach(e => { let o = document.createElement('option'); o.value = e.id; o.textContent = e.name + ' (' + e.id + ')'; empSelect.appendChild(o); });
         empSelect.onchange = loadOfficialEvaluation;
-
-        const nowYear = new Date().getFullYear();
-        for (let y = nowYear - 2; y <= nowYear + 1; y++) {
-            let o = document.createElement('option'); o.value = y; o.textContent = y;
-            if (y === nowYear) o.selected = true;
-            yearSelect.appendChild(o);
-        }
-        yearSelect.onchange = loadOfficialEvaluation;
-
         buildOfficialCriteriaForm();
         document.getElementById('officialDate').value = new Date().toISOString().slice(0, 10);
     }
+
+    // لو مسجل دخول بالفعل (من نفس الصفحة أو من صفحة الإيجابيات والسلبيات)، ادخل على طول
+    if (qCurrentPeriod && qCurrentRole && qCurrentName) {
+        document.getElementById('officialLoginBox').style.display = 'none';
+        document.getElementById('officialContent').style.display = 'block';
+        document.getElementById('officialScoreBox').style.display = isFullAccessViewer() ? 'flex' : 'none';
+        document.getElementById('officialGradeBox').style.display = isFullAccessViewer() ? 'flex' : 'none';
+        loadOfficialEvaluation();
+    } else {
+        document.getElementById('officialLoginBox').style.display = 'block';
+        document.getElementById('officialContent').style.display = 'none';
+
+        const savedRole = localStorage.getItem('GomlaQuarterly_Role');
+        const savedName = localStorage.getItem('GomlaQuarterly_Name');
+        if (savedRole && savedName && periods.length > 0) {
+            roleSelect.value = savedRole;
+            nameSelect.value = savedName;
+            enterOfficialEntry();
+        } else {
+            const myRole = getViewerRole();
+            const autoFillMap = { manager: ['q_manager', 'محمد مصطفي'], deputy1: ['q_deputy1', 'محمد يسري'], deputy2: ['q_deputy2', 'سعد محمد'] };
+            if (autoFillMap[myRole]) {
+                roleSelect.value = autoFillMap[myRole][0];
+                nameSelect.value = autoFillMap[myRole][1];
+            }
+        }
+    }
+}
+
+function enterOfficialEntry() {
+    const period = document.getElementById('offPeriodSelect').value;
+    const role = document.getElementById('offRoleSelect').value;
+    const name = document.getElementById('offNameSelect').value;
+    if (!period) { alert('لا توجد فترة محددة. اطلب من مدير الإدارة يضيف فترة جديدة.'); return; }
+
+    qCurrentPeriod = period; qCurrentRole = role; qCurrentName = name;
+    localStorage.setItem('GomlaQuarterly_Role', role);
+    localStorage.setItem('GomlaQuarterly_Name', name);
+
+    document.getElementById('officialLoginBox').style.display = 'none';
+    document.getElementById('officialContent').style.display = 'block';
+    document.getElementById('officialScoreBox').style.display = isFullAccessViewer() ? 'flex' : 'none';
+    document.getElementById('officialGradeBox').style.display = isFullAccessViewer() ? 'flex' : 'none';
     loadOfficialEvaluation();
 }
 
@@ -2367,44 +2569,42 @@ function calculateOfficialTotal() {
 }
 
 function loadOfficialEvaluation() {
+    if (!qCurrentPeriod || !qCurrentRole) return;
     const empId = document.getElementById('officialEmployeeSelect').value;
-    const year = document.getElementById('officialYearSelect').value;
-    const myRole = getViewerRole();
-    const rec = monthlyArchive._official && monthlyArchive._official[year] && monthlyArchive._official[year][empId] && monthlyArchive._official[year][empId][myRole];
+    const rec = monthlyArchive._official && monthlyArchive._official[qCurrentPeriod] && monthlyArchive._official[qCurrentPeriod][empId] && monthlyArchive._official[qCurrentPeriod][empId][qCurrentRole];
+
+    const roleLabel = (quarterlyEvaluatorRoles.find(r => r.key === qCurrentRole) || {}).label || '';
+    document.getElementById('officialReadout').innerHTML =
+        'مسجل دخول باسم: <b>' + qCurrentName + '</b> — الدور: <b>' + roleLabel + '</b> — الفترة: <b>' + qCurrentPeriod + '</b>' +
+        ' &nbsp;|&nbsp; <a href="#" onclick="logoutQuarterly(); return false;" style="color:var(--danger); font-weight:700;">تسجيل خروج</a>';
 
     officialPersonalCriteria.forEach((t, i) => { const el = document.getElementById('op_' + i); if (el) el.value = (rec && rec.ratings && rec.ratings['op_' + i] !== undefined) ? rec.ratings['op_' + i] : 100; });
     officialPerformanceCriteria.forEach((t, i) => { const el = document.getElementById('oq_' + i); if (el) el.value = (rec && rec.ratings && rec.ratings['oq_' + i] !== undefined) ? rec.ratings['oq_' + i] : 100; });
-    document.getElementById('officialEvaluatorTitle').value = rec ? (rec.evaluatorTitle || '') : '';
     document.getElementById('officialDate').value = rec ? (rec.date || new Date().toISOString().slice(0, 10)) : new Date().toISOString().slice(0, 10);
     calculateOfficialTotal();
 }
 
 function saveOfficialEvaluation() {
+    if (!qCurrentPeriod || !qCurrentRole) { alert('مفيش جلسة دخول حالية.'); return; }
     const empId = document.getElementById('officialEmployeeSelect').value;
-    const year = document.getElementById('officialYearSelect').value;
-    const myRole = getViewerRole();
-    if (myRole !== 'manager' && myRole !== 'deputy1' && myRole !== 'deputy2') {
-        alert('⛔ غير مصرح لك بهذا التقييم.');
-        return;
-    }
 
     const ratings = {};
     officialPersonalCriteria.forEach((t, i) => { ratings['op_' + i] = parseFloat(document.getElementById('op_' + i).value); });
     officialPerformanceCriteria.forEach((t, i) => { ratings['oq_' + i] = parseFloat(document.getElementById('oq_' + i).value); });
 
     const percentage = calculateOfficialTotal();
-    const evaluatorTitle = document.getElementById('officialEvaluatorTitle').value;
     const date = document.getElementById('officialDate').value;
+    const roleLabel = (quarterlyEvaluatorRoles.find(r => r.key === qCurrentRole) || {}).label || '';
 
     const formData = new URLSearchParams();
     formData.append('action', 'saveOfficial');
     formData.append('sheet', TARGET_SHEET_NAME);
-    formData.append('year', year);
+    formData.append('period', qCurrentPeriod);
     formData.append('employeeId', empId);
-    formData.append('roleKey', myRole);
+    formData.append('roleKey', qCurrentRole);
     formData.append('ratings', JSON.stringify(ratings));
     formData.append('percentage', percentage);
-    formData.append('evaluatorTitle', evaluatorTitle);
+    formData.append('evaluatorTitle', roleLabel);
     formData.append('date', date);
 
     fetch(CLOUD_STORAGE_URL, {
@@ -2414,6 +2614,30 @@ function saveOfficialEvaluation() {
     }).then(() => {
         alert('✅ تم حفظ التقييم الرسمي.');
         syncDataLive(false);
+    }).catch(() => alert('⚠️ تعذر الاتصال بالسيرفر.'));
+}
+
+// حذف ذاتي: المقيّم بيحذف بس تقييمه هو لهذا الموظف في هذه الفترة
+function deleteMyOfficialEvaluation() {
+    if (!qCurrentPeriod || !qCurrentRole) { alert('مفيش جلسة دخول حالية.'); return; }
+    const empId = document.getElementById('officialEmployeeSelect').value;
+    if (!confirm('هل تريد حذف تقييمك لهذا الموظف في هذه الفترة؟')) return;
+
+    const formData = new URLSearchParams();
+    formData.append('action', 'deleteMyOfficial');
+    formData.append('sheet', TARGET_SHEET_NAME);
+    formData.append('period', qCurrentPeriod);
+    formData.append('employeeId', empId);
+    formData.append('roleKey', qCurrentRole);
+
+    fetch(CLOUD_STORAGE_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: formData.toString()
+    }).then(() => {
+        alert('✅ تم الحذف.');
+        syncDataLive(false);
+        loadOfficialEvaluation();
     }).catch(() => alert('⚠️ تعذر الاتصال بالسيرفر.'));
 }
 
@@ -2467,34 +2691,7 @@ function wipeQuarterlyPeriod() {
     document.body.appendChild(script);
 }
 
-// حذف إداري: بيمسح التقييم الرسمي لموظف معيّن، سنة معيّنة، من المقيّم الحالي — محمي بكلمة سر
-function wipeOfficialEvaluation() {
-    const empId = document.getElementById('officialEmployeeSelect').value;
-    const year = document.getElementById('officialYearSelect').value;
-    const myRole = getViewerRole();
 
-    const enteredPassword = prompt('🔒 من فضلك أدخل كلمة سر الفرمتة الشاملة للتأكيد:');
-    if (enteredPassword === null || enteredPassword.trim() === '') { alert('تم الإلغاء.'); return; }
-    if (!confirm('هل أنت متأكد من حذف هذا التقييم الرسمي نهائياً؟')) return;
-
-    const script = document.createElement('script');
-    const cbName = '__wipeOfficial_' + Date.now();
-    window[cbName] = function (response) {
-        delete window[cbName];
-        if (!response || response.status === 'unauthorized') {
-            alert('⛔ كلمة السر غير صحيحة. لم يتم حذف أي شيء.');
-            return;
-        }
-        applyServerArchive(response);
-        loadOfficialEvaluation();
-        alert('✅ تم حذف التقييم.');
-    };
-    script.src = CLOUD_STORAGE_URL + "?action=wipeOfficial&year=" + encodeURIComponent(year) +
-        "&employeeId=" + encodeURIComponent(empId) + "&roleKey=" + encodeURIComponent(myRole) +
-        "&password=" + encodeURIComponent(enteredPassword) + "&callback=" + cbName;
-    script.onerror = function () { alert('⚠️ تعذر الاتصال بالسيرفر.'); };
-    document.body.appendChild(script);
-}
 </script>
 </body>
 </html>
