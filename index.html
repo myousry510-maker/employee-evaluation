@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منظومة تقييم الموظف المثالي | جملة ماركت</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #FF6B00; 
@@ -348,6 +349,9 @@
 
     <div id="page-leaderboard" class="page">
         <div class="table-title" id="leaderboardTableTitle">🏆 ترتيب المتسابقين وتحديد الفائز</div>
+        <div class="cert-btn-row" style="margin-bottom:12px;">
+            <button class="action-btn" style="background:#1D6F42; color:#fff; border-color:#1D6F42;" onclick="exportLeaderboardToExcel()">📥 تصدير إلى Excel</button>
+        </div>
         <div class="table-container">
             <table>
                 <thead>
@@ -525,6 +529,7 @@
                     <label>الفترة</label>
                     <select id="qReportPeriodSelect"></select>
                 </div>
+                <button class="action-btn" style="background:#1D6F42; color:#fff; border-color:#1D6F42;" onclick="exportQReportToExcel()">📥 تصدير إلى Excel</button>
                 <button class="action-btn btn-dark-danger" onclick="wipeQuarterlyPeriod()">🗑️ حذف بيانات هذه الفترة نهائياً (بكلمة سر)</button>
             </div>
             <div class="table-container">
@@ -553,6 +558,7 @@
                     <label>تصفية حسب المقيّم</label>
                     <select id="qFeedbackEvaluatorFilter"></select>
                 </div>
+                <button class="action-btn" style="background:#1D6F42; color:#fff; border-color:#1D6F42;" onclick="exportQFeedbackToExcel()">📥 تصدير إلى Excel</button>
             </div>
             <div class="table-container" style="margin-top:20px;">
                 <table>
@@ -2440,6 +2446,64 @@ function renderAnnual() {
             '<td>' + (r.finalAvg !== null ? getGradeLabel(r.finalAvg) : '-') + '</td>' +
         '</tr>'
     ).join('');
+}
+
+// ===== تصدير الجداول إلى Excel =====
+// بيصدّر الجدول زي ما هو ظاهر قدامك بالظبط (بما فيه أي فلترة مختارة). لو مكتبة Excel مش
+// متاحة (النت واقع مثلاً)، بيتحفظ كملف CSV بيفتح في Excel عادي بالعربي.
+function tableToRows(table) {
+    return Array.from(table.querySelectorAll('tr')).map(tr =>
+        Array.from(tr.children).map(cell => {
+            const text = Array.from(cell.childNodes).map(n => n.textContent).join(' ').replace(/\s+/g, ' ').trim();
+            return (text !== '' && !isNaN(text) && !/^0\d/.test(text)) ? Number(text) : text;
+        })
+    );
+}
+
+function exportRowsToExcel(rows, fileBaseName, sheetName) {
+    const safeName = fileBaseName.replace(/[\\/:*?"<>|]/g, '-');
+    if (typeof XLSX !== 'undefined') {
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        ws['!cols'] = rows[0].map((_, i) => ({ wch: Math.min(60, Math.max(10, ...rows.map(r => String(r[i] === undefined ? '' : r[i]).length))) }));
+        const wb = XLSX.utils.book_new();
+        wb.Workbook = { Views: [{ RTL: true }] };
+        XLSX.utils.book_append_sheet(wb, ws, sheetName.substring(0, 31));
+        XLSX.writeFile(wb, safeName + '.xlsx');
+    } else {
+        const csv = '\uFEFF' + rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = safeName + '.csv';
+        document.body.appendChild(a); a.click(); a.remove();
+    }
+}
+
+function exportTableById(anchorId, baseName, sheetName) {
+    const anchor = document.getElementById(anchorId);
+    const table = anchor ? anchor.closest('table') : null;
+    if (!table) { alert('لا يوجد جدول للتصدير.'); return; }
+    const rows = tableToRows(table);
+    if (rows.length <= 1 || (rows.length === 2 && rows[1].length === 1)) { alert('لا توجد بيانات لتصديرها.'); return; }
+    exportRowsToExcel(rows, baseName, sheetName);
+}
+
+function exportLeaderboardToExcel() {
+    const month = document.getElementById('globalMonthSelect').value;
+    exportTableById('evaluationTableBody', 'لوحة الصدارة - ' + month, 'لوحة الصدارة');
+}
+
+function exportQReportToExcel() {
+    const period = document.getElementById('qReportPeriodSelect').value;
+    if (!period) { alert('اختار فترة أولاً.'); return; }
+    exportTableById('qReportTableBody', 'التقرير الربع سنوي المجمّع - ' + period, 'التقرير المجمّع');
+}
+
+function exportQFeedbackToExcel() {
+    const period = document.getElementById('qFeedbackPeriodSelect').value;
+    if (!period) { alert('اختار فترة أولاً.'); return; }
+    const who = document.getElementById('qFeedbackEvaluatorFilter').value;
+    exportTableById('qFeedbackTableBody', 'الإيجابيات والسلبيات - ' + period + (who ? ' - ' + who : ''), 'الإيجابيات والسلبيات');
 }
 
 // ===== استرجاع وفحص التقييم الرسمي (بنفس نظام صفحة استرجاع وفحص التقييمات التفصيلية) =====
