@@ -306,6 +306,7 @@
         <button id="tab-btn-qentry" class="tab-btn" onclick="switchTab('qentry')">📋 الإيجابيات والسلبيات</button>
         <button id="tab-btn-qreport" class="tab-btn" onclick="switchTab('qreport')">📊 التقرير الربع سنوي المجمّع</button>
         <button id="tab-btn-qfeedback" class="tab-btn" onclick="switchTab('qfeedback')">💬 الإيجابيات والسلبيات المجمّعة</button>
+        <button id="tab-btn-offhistory" class="tab-btn" onclick="switchTab('offhistory')">🗂️ استرجاع وفحص التقييم الرسمي</button>
         <button id="tab-btn-annual" class="tab-btn" onclick="switchTab('annual')">📈 التقدير السنوي النهائي</button>
     </div>
 
@@ -558,6 +559,22 @@
                     <thead><tr><th>الموظف</th><th>جهة التقييم</th><th>المقيّم</th><th>النسبة</th><th>إيجابيات</th><th>سلبيات</th></tr></thead>
                     <tbody id="qFeedbackTableBody"></tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-offhistory" class="page">
+        <div class="table-title">🗂️ استرجاع وفحص التقييم الرسمي</div>
+        <div class="cert-controls-row" style="margin-top:15px;">
+            <div class="cert-field">
+                <label>الفترة</label>
+                <select id="offHistoryPeriodSelect"></select>
+            </div>
+        </div>
+        <div class="history-layout">
+            <div class="employees-sidebar" id="offHistorySidebar"></div>
+            <div class="details-panel" id="offHistoryDetails">
+                <div class="empty-state">💡 اضغط على اسم الموظف من القائمة الجانبية لاستعراض التقييم الرسمي التفصيلي.</div>
             </div>
         </div>
     </div>
@@ -1502,6 +1519,7 @@ function switchTab(id) {
     if(id === 'official') { initOfficialTab(); }
     if(id === 'qfeedback') { initQFeedbackTab(); }
     if(id === 'annual') { initAnnualTab(); }
+    if(id === 'offhistory') { initOffHistoryTab(); }
 }
 
 function toggleTheme() { isDarkMode = !isDarkMode; document.documentElement.setAttribute('data-theme', isDarkMode?'dark':'light'); }
@@ -2422,6 +2440,145 @@ function renderAnnual() {
             '<td>' + (r.finalAvg !== null ? getGradeLabel(r.finalAvg) : '-') + '</td>' +
         '</tr>'
     ).join('');
+}
+
+// ===== استرجاع وفحص التقييم الرسمي (بنفس نظام صفحة استرجاع وفحص التقييمات التفصيلية) =====
+// كل مقيّم يشوف تقييماته هو بس (بدون النسبة والتقدير)، ومدير الإدارة والنواب يشوفوا كل الجهات بالنسبة والتقدير.
+function getOffHistoryViewerRole() {
+    return qCurrentRole || localStorage.getItem('GomlaQuarterly_Role') || '';
+}
+
+function ratingLabelFromValue(v) {
+    const found = officialRatingScale.find(o => o.value === parseFloat(v));
+    return found ? found.label : '-';
+}
+
+function initOffHistoryTab() {
+    const periodSelect = document.getElementById('offHistoryPeriodSelect');
+    const current = periodSelect.value;
+    const periods = getQuarterlyPeriods();
+    periodSelect.innerHTML = '';
+    if (periods.length === 0) {
+        let o = document.createElement('option'); o.value = ''; o.textContent = 'لا توجد فترات مضافة بعد';
+        periodSelect.appendChild(o);
+    } else {
+        periods.forEach(p => { let o = document.createElement('option'); o.value = p; o.textContent = p; periodSelect.appendChild(o); });
+        if (periods.includes(current)) periodSelect.value = current;
+    }
+    periodSelect.onchange = function () {
+        renderOffHistorySidebar();
+        document.getElementById('offHistoryDetails').innerHTML = '<div class="empty-state">💡 اضغط على اسم الموظف من القائمة الجانبية لاستعراض التقييم الرسمي التفصيلي.</div>';
+    };
+    renderOffHistorySidebar();
+}
+
+function renderOffHistorySidebar() {
+    const period = document.getElementById('offHistoryPeriodSelect').value;
+    const sb = document.getElementById('offHistorySidebar');
+    sb.innerHTML = '';
+    const full = isFullAccessViewer();
+    const myRole = getOffHistoryViewerRole();
+
+    if (!period) { sb.innerHTML = '<div class="empty-state" style="margin-top:20px;">لا توجد فترات مضافة بعد.</div>'; return; }
+    if (!full && !myRole) { sb.innerHTML = '<div class="empty-state" style="margin-top:20px; font-size:13px;">سجّل دخولك من تبويب "التقييم الرسمي" أولاً عشان تشوف تقييماتك.</div>'; return; }
+
+    const periodData = (monthlyArchive._official && monthlyArchive._official[period]) || {};
+    const list = baseEmployeesDataset.filter(emp => {
+        const d = periodData[emp.id];
+        if (!d) return false;
+        return full ? quarterlyEvaluatorRoles.some(r => d[r.key]) : !!d[myRole];
+    });
+
+    if (list.length === 0) { sb.innerHTML = '<div class="empty-state" style="margin-top:20px; font-size:13px;">لا توجد تقييمات رسمية مسجلة في هذه الفترة.</div>'; return; }
+
+    list.forEach(emp => {
+        const d = periodData[emp.id];
+        let info = '✓';
+        if (full) {
+            let tot = 0, c = 0;
+            quarterlyEvaluatorRoles.forEach(r => { if (d[r.key] && d[r.key].percentage > 0) { tot += d[r.key].percentage; c++; } });
+            info = c > 0 ? (tot / c).toFixed(1) + '% · ' + getGradeLabel(tot / c) : '—';
+        }
+        const div = document.createElement('div');
+        div.className = 'sidebar-item';
+        div.innerHTML = '<span>' + emp.name + '</span><span style="font-size:11px;background:rgba(0,0,0,0.05);padding:2px 6px;border-radius:4px;">' + info + '</span>';
+        div.onclick = () => {
+            sb.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('selected'));
+            div.classList.add('selected');
+            showOffHistoryDetails(emp.id, emp.name);
+        };
+        sb.appendChild(div);
+    });
+}
+
+function showOffHistoryDetails(empId, name) {
+    const period = document.getElementById('offHistoryPeriodSelect').value;
+    const panel = document.getElementById('offHistoryDetails');
+    const full = isFullAccessViewer();
+    const myRole = getOffHistoryViewerRole();
+    const d = (monthlyArchive._official && monthlyArchive._official[period] && monthlyArchive._official[period][empId]) || {};
+    const roles = quarterlyEvaluatorRoles.filter(r => d[r.key] && (full || r.key === myRole));
+
+    if (roles.length === 0) {
+        panel.innerHTML = '<h3>📋 ' + name + ' (' + empId + ')</h3><div class="empty-state">❌ لا توجد تقييمات رسمية مسجلة لهذا الموظف في هذه الفترة.</div>';
+        return;
+    }
+
+    let html = '<h3>📋 التقييم الرسمي: <span style="color:var(--primary)">' + name + ' (' + empId + ')</span> — ' + period + '</h3>';
+    html += '<div style="margin-top:15px; margin-bottom:15px;"><label style="font-weight:700;">🔍 اختر جهة التقييم لعرض بنودها التفصيلية:</label>';
+    html += '<select id="offHistoryRoleSelect" class="month-select" style="width:100%; margin-top:8px;" onchange="renderOffHistoryCriteria(' + empId + ')">';
+    roles.forEach(r => {
+        html += '<option value="' + r.key + '">' + r.label + (full ? ' — [' + d[r.key].percentage + '% · ' + getGradeLabel(d[r.key].percentage) + ']' : '') + '</option>';
+    });
+    html += '</select></div><div id="offHistoryCriteriaBox"></div>';
+    panel.innerHTML = html;
+    renderOffHistoryCriteria(empId);
+}
+
+function renderOffHistoryCriteria(empId) {
+    const period = document.getElementById('offHistoryPeriodSelect').value;
+    const roleKey = document.getElementById('offHistoryRoleSelect').value;
+    const box = document.getElementById('offHistoryCriteriaBox');
+    const full = isFullAccessViewer();
+    const myRole = getOffHistoryViewerRole();
+    const rec = monthlyArchive._official && monthlyArchive._official[period] && monthlyArchive._official[period][empId] && monthlyArchive._official[period][empId][roleKey];
+    if (!rec) { box.innerHTML = '<div class="empty-state" style="margin-top:40px; color:var(--danger)">⚠️ لا يوجد تقييم من هذه الجهة.</div>'; return; }
+
+    let html = '';
+    if (full) {
+        html += '<div style="background:var(--primary); color:white; padding:10px; font-weight:700; border-radius:6px; margin-bottom:15px; text-align:center;">' +
+            'النسبة الإجمالية: ' + rec.percentage + '% — التقدير: ' + getGradeLabel(rec.percentage) + '</div>';
+    } else {
+        html += '<div style="background:var(--primary); color:white; padding:10px; font-weight:700; border-radius:6px; margin-bottom:15px; text-align:center;">تقييمك المسجّل لهذا الموظف</div>';
+    }
+    if (rec.date) html += '<div style="font-size:13px; color:var(--mid); margin-bottom:10px;">التاريخ: ' + rec.date + '</div>';
+
+    if (roleKey === myRole) {
+        html += '<button class="action-btn" style="width:100%; justify-content:center; background:var(--info); color:white; border-color:var(--info); margin-bottom:15px;" onclick="editOfficialFromHistory(' + empId + ')">✏️ تعديل هذا التقييم الآن</button>';
+    }
+
+    const renderAxis = (title, items, prefix) => {
+        let h = '<div class="axis-title" style="background:var(--mid);">' + title + '</div><div style="background:#fcfcfc; border:1px solid #ddd; padding:10px; border-radius:6px;">';
+        items.forEach((text, i) => {
+            const v = rec.ratings ? rec.ratings[prefix + i] : undefined;
+            h += '<div class="history-row"><span>' + text + '</span><strong style="color:var(--primary);">' + (v !== undefined ? ratingLabelFromValue(v) : '-') + '</strong></div>';
+        });
+        return h + '</div>';
+    };
+    html += renderAxis('السمات الشخصية', officialPersonalCriteria, 'op_');
+    html += renderAxis('جودة الأداء', officialPerformanceCriteria, 'oq_');
+    box.innerHTML = html;
+}
+
+// يفتح تبويب "التقييم الرسمي" على نفس الفترة والموظف عشان تعدّل تقييمك القديم وتحفظه من جديد
+function editOfficialFromHistory(empId) {
+    const period = document.getElementById('offHistoryPeriodSelect').value;
+    qCurrentPeriod = period;
+    qCurrentRole = getOffHistoryViewerRole();
+    qCurrentName = qCurrentName || localStorage.getItem('GomlaQuarterly_Name') || '';
+    switchTab('official');
+    const sel = document.getElementById('officialEmployeeSelect');
+    if (sel) { sel.value = empId; loadOfficialEvaluation(); }
 }
 
 // ===== التقييم الرسمي (نسخة نموذج الـHR) — مدير الإدارة والنواب فقط =====
