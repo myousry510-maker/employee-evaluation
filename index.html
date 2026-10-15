@@ -643,7 +643,7 @@
                     </div>
                     <div class="form-group score-group" id="officialScoreBox" style="display:none;">
                         <label>الدرجة الإجمالية</label>
-                        <input type="text" id="officialTotalScore" readonly value="0%" style="color:var(--primary); text-align:center; font-weight:900;">
+                        <input type="text" id="officialTotalScore" readonly value="0%" oninput="calculateOfficialTotal()" style="color:var(--primary); text-align:center; font-weight:900;">
                     </div>
                     <div class="form-group score-group" id="officialGradeBox" style="display:none;">
                         <label>التقدير</label>
@@ -651,11 +651,16 @@
                     </div>
                 </div>
 
+                <div id="officialCriteriaWrap">
                 <div class="box-title" style="font-size:16px;">السمات الشخصية</div>
                 <div class="criteria-list" id="officialPersonalCriteria"></div>
 
                 <div class="box-title" style="font-size:16px;">جودة الأداء</div>
                 <div class="criteria-list" id="officialPerformanceCriteria"></div>
+                </div>
+                <div id="officialDirectNote" style="display:none; background:var(--bg-light); border:1px dashed var(--primary); border-radius:8px; padding:10px 14px; margin:10px 0; font-size:13px; font-weight:700; color:var(--primary);">
+                    ✍️ اكتب النسبة المئوية مباشرة في خانة "الدرجة الإجمالية" (من 0 إلى 100) — مش لازم تختار بنود التقييم.
+                </div>
 
                 <div class="grid-inputs" style="margin-top:15px;">
                     <div class="form-group">
@@ -2621,6 +2626,11 @@ function renderOffHistoryCriteria(empId) {
         html += '<button class="action-btn" style="width:100%; justify-content:center; background:var(--info); color:white; border-color:var(--info); margin-bottom:15px;" onclick="editOfficialFromHistory(' + empId + ')">✏️ تعديل هذا التقييم الآن</button>';
     }
 
+    if (rec.ratings && rec.ratings._direct) {
+        box.innerHTML = html + '<div class="empty-state" style="margin-top:30px; font-size:14px;">هذا التقييم أُدخل كنسبة مباشرة (بدون بنود تفصيلية).</div>';
+        return;
+    }
+
     const renderAxis = (title, items, prefix) => {
         let h = '<div class="axis-title" style="background:var(--mid);">' + title + '</div><div style="background:#fcfcfc; border:1px solid #ddd; padding:10px; border-radius:6px;">';
         items.forEach((text, i) => {
@@ -2778,7 +2788,32 @@ function getGradeLabel(pct) {
     return 'مقبول';
 }
 
+// وضع الإدخال المباشر للنسبة: لمدير الإدارة فقط (دور "مدير الإدارة" + صلاحية كاملة)
+function isOfficialDirectMode() {
+    return qCurrentRole === 'q_manager' && isFullAccessViewer();
+}
+
+function applyOfficialMode() {
+    const direct = isOfficialDirectMode();
+    const wrap = document.getElementById('officialCriteriaWrap');
+    const note = document.getElementById('officialDirectNote');
+    const total = document.getElementById('officialTotalScore');
+    if (wrap) wrap.style.display = direct ? 'none' : '';
+    if (note) note.style.display = direct ? 'block' : 'none';
+    if (total) {
+        total.readOnly = !direct;
+        total.type = direct ? 'number' : 'text';
+        if (direct) { total.min = 0; total.max = 100; total.step = 'any'; total.placeholder = 'مثلاً 95'; }
+    }
+}
+
 function calculateOfficialTotal() {
+    if (isOfficialDirectMode()) {
+        const raw = parseFloat(document.getElementById('officialTotalScore').value);
+        const gradeF = document.getElementById('officialGradeLabel');
+        if (gradeF) gradeF.value = isNaN(raw) ? '—' : getGradeLabel(raw);
+        return isNaN(raw) ? '' : String(raw);
+    }
     let total = 0, count = 0;
     officialPersonalCriteria.forEach((t, i) => { const el = document.getElementById('op_' + i); if (el) { total += parseFloat(el.value); count++; } });
     officialPerformanceCriteria.forEach((t, i) => { const el = document.getElementById('oq_' + i); if (el) { total += parseFloat(el.value); count++; } });
@@ -2802,6 +2837,10 @@ function loadOfficialEvaluation() {
     officialPersonalCriteria.forEach((t, i) => { const el = document.getElementById('op_' + i); if (el) el.value = (rec && rec.ratings && rec.ratings['op_' + i] !== undefined) ? rec.ratings['op_' + i] : 100; });
     officialPerformanceCriteria.forEach((t, i) => { const el = document.getElementById('oq_' + i); if (el) el.value = (rec && rec.ratings && rec.ratings['oq_' + i] !== undefined) ? rec.ratings['oq_' + i] : 100; });
     document.getElementById('officialDate').value = rec ? (rec.date || new Date().toISOString().slice(0, 10)) : new Date().toISOString().slice(0, 10);
+    applyOfficialMode();
+    if (isOfficialDirectMode()) {
+        document.getElementById('officialTotalScore').value = rec ? rec.percentage : '';
+    }
     calculateOfficialTotal();
 }
 
@@ -2810,8 +2849,14 @@ function saveOfficialEvaluation() {
     const empId = document.getElementById('officialEmployeeSelect').value;
 
     const ratings = {};
-    officialPersonalCriteria.forEach((t, i) => { ratings['op_' + i] = parseFloat(document.getElementById('op_' + i).value); });
-    officialPerformanceCriteria.forEach((t, i) => { ratings['oq_' + i] = parseFloat(document.getElementById('oq_' + i).value); });
+    if (isOfficialDirectMode()) {
+        const pct = parseFloat(document.getElementById('officialTotalScore').value);
+        if (isNaN(pct) || pct < 0 || pct > 100) { alert('اكتب نسبة صحيحة من 0 إلى 100 في خانة الدرجة الإجمالية.'); return; }
+        ratings._direct = true;
+    } else {
+        officialPersonalCriteria.forEach((t, i) => { ratings['op_' + i] = parseFloat(document.getElementById('op_' + i).value); });
+        officialPerformanceCriteria.forEach((t, i) => { ratings['oq_' + i] = parseFloat(document.getElementById('oq_' + i).value); });
+    }
 
     const percentage = calculateOfficialTotal();
     const date = document.getElementById('officialDate').value;
